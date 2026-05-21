@@ -528,7 +528,7 @@ final class Tokens {
             }
             final Value bare = this.readValue();
             final List<MethodChain> tail;
-            if (Emissions.chainable(bare)) {
+            if (new Chainable(bare).accepted()) {
                 tail = this.readChain();
             } else {
                 tail = Collections.emptyList();

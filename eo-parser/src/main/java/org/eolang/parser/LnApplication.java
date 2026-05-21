@@ -88,7 +88,7 @@ final class LnApplication implements Line {
         globals.markEmitted();
         this.emit(emit, suffix, head, chain, args);
         if (outer != null) {
-            emit.slot(Emissions.bindingTag(outer));
+            emit.slot(new BindingTag(outer).encoded());
         }
     }
 
@@ -164,7 +164,7 @@ final class LnApplication implements Line {
     ) {
         new ChainEmission(emit, this.span, head, chain, suffix).run();
         for (final Value arg : args) {
-            Emissions.emitArg(emit, arg, this.span.line());
+            new Emissions(emit).emitArg(arg, this.span.line());
         }
     }
 }

@@ -180,7 +180,7 @@ final class LnFormation implements Line {
             null, this.span.line(), this.span.indent()
         );
         if (binding != null) {
-            emit.slot(Emissions.bindingTag(binding));
+            emit.slot(new BindingTag(binding).encoded());
         }
         if (suffix.constant()) {
             emit.constant();

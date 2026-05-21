@@ -132,9 +132,9 @@ final class LnOnlyPhi implements Line {
         final List<MethodChain> chain = tokens.readChain();
         final List<Value> args = tokens.readArgs();
         if (chain.isEmpty()) {
-            Emissions.openValue(emit, "φ", head, this.span.line());
+            new Emissions(emit).openValue("φ", head, this.span.line());
         } else {
-            Emissions.openValue(emit, null, head, this.span.line());
+            new Emissions(emit).openValue(null, head, this.span.line());
             emit.close();
             for (int idx = 0; idx < chain.size() - 1; idx = idx + 1) {
                 final MethodChain link = chain.get(idx);
@@ -147,7 +147,7 @@ final class LnOnlyPhi implements Line {
             emit.method();
         }
         for (final Value arg : args) {
-            Emissions.emitArg(emit, arg, this.span.line());
+            new Emissions(emit).emitArg(arg, this.span.line());
         }
         emit.close();
     }

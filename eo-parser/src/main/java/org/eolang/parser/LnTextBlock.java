@@ -52,9 +52,9 @@ final class LnTextBlock implements Line {
         final Suffix suffix = new Suffix(
             body.substring(3), this.span, this.span.indent() + 3
         );
-        final String joined = Emissions.unescapeBody(
+        final String joined = new UnescapedBody(
             String.join(String.valueOf('\n'), globals.tbody()).trim()
-        );
+        ).decoded();
         this.transition(stack, suffix);
         emit.object(
             suffix.attribute(this.span.line(), this.span.indent()),
@@ -64,8 +64,8 @@ final class LnTextBlock implements Line {
         if (suffix.constant()) {
             emit.constant();
         }
-        Emissions.bytesCarrier(
-            emit, this.span.line(), this.span.indent(),
+        new Emissions(emit).bytesCarrier(
+            this.span.line(), this.span.indent(),
             new Hex(joined).asString()
         );
         globals.closeTextBlock();

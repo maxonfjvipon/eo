@@ -82,12 +82,12 @@ final class ChainEmission {
             this.span.line(), this.span.indent()
         );
         if (this.chain.isEmpty()) {
-            Emissions.openValue(this.emit, name, this.head, this.span.line());
+            new Emissions(this.emit).openValue(name, this.head, this.span.line());
             if (this.suffix.constant()) {
                 this.emit.constant();
             }
         } else {
-            Emissions.openValue(this.emit, null, this.head, this.span.line());
+            new Emissions(this.emit).openValue(null, this.head, this.span.line());
             this.emit.close();
             for (int idx = 0; idx < this.chain.size() - 1; idx = idx + 1) {
                 final MethodChain link = this.chain.get(idx);
