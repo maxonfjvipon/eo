@@ -15,7 +15,7 @@ package org.eolang.parser;
  *
  * @since 0.1
  */
-final class ReceiverBinding {
+final class BdReceiver {
 
     /**
      * The receiver value to validate.
@@ -32,7 +32,7 @@ final class ReceiverBinding {
      * @param value The receiver value
      * @param src The line span
      */
-    ReceiverBinding(final Value value, final Span src) {
+    BdReceiver(final Value value, final Span src) {
         this.receiver = value;
         this.span = src;
     }

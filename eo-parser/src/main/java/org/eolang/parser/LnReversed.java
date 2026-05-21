@@ -72,7 +72,7 @@ final class LnReversed implements Line {
         tokens.seek(tokens.cursor() + 1);
         final List<Value> args = tokens.readArgs();
         if (!args.isEmpty()) {
-            new ReceiverBinding(args.get(0), this.span).check();
+            new BdReceiver(args.get(0), this.span).check();
             new AllOrNothing(
                 args.subList(1, args.size()), this.span
             ).check();
@@ -92,7 +92,7 @@ final class LnReversed implements Line {
             openness = Openness.HORIZONTAL_COMPLETED;
         }
         this.transition(stack, suffix, kind, openness);
-        new ObservedBinding(stack, outer, this.span).observe();
+        new BdObserver(stack, outer, this.span).observe();
         globals.clearBlanks();
         globals.markEmitted();
         emit.object(

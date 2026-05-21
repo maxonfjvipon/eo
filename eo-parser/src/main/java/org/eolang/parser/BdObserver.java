@@ -23,7 +23,7 @@ package org.eolang.parser;
  *
  * @since 0.1
  */
-final class ObservedBinding {
+final class BdObserver {
 
     /**
      * The indent stack (the new child is already on top).
@@ -46,7 +46,7 @@ final class ObservedBinding {
      * @param label Outer binding label or {@code null}
      * @param src The child line's span
      */
-    ObservedBinding(final Stack stk, final String label, final Span src) {
+    BdObserver(final Stack stk, final String label, final Span src) {
         this.stack = stk;
         this.outer = label;
         this.span = src;

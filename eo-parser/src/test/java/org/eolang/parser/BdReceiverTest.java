@@ -8,15 +8,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test case for {@link ReceiverBinding}.
+ * Test case for {@link BdReceiver}.
  * @since 0.1
  */
-final class ReceiverBindingTest {
+final class BdReceiverTest {
 
     @Test
     void acceptsReceiverWithoutBinding() {
         Assertions.assertDoesNotThrow(
-            () -> new ReceiverBinding(
+            () -> new BdReceiver(
                 new Value(Value.Kind.IDENTIFIER, "cond", 4, 8),
                 new Span("if. cond then else", 1)
             ).check(),
@@ -28,7 +28,7 @@ final class ReceiverBindingTest {
     void rejectsReceiverWithBinding() {
         Assertions.assertThrows(
             ParseError.class,
-            () -> new ReceiverBinding(
+            () -> new BdReceiver(
                 new Value(Value.Kind.IDENTIFIER, "cond", 4, 8, "x"),
                 new Span("if. cond:x then else", 1)
             ).check(),

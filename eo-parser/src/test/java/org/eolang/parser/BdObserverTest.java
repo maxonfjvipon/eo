@@ -8,17 +8,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test case for {@link ObservedBinding}.
+ * Test case for {@link BdObserver}.
  * @since 0.1
  */
-final class ObservedBindingTest {
+final class BdObserverTest {
 
     @Test
     void acceptsAbsentBindingAtTopLevel() {
         final Stack stack = new Stack();
         stack.push(0, 1, Kind.HEAD, Openness.OPEN);
         Assertions.assertDoesNotThrow(
-            () -> new ObservedBinding(stack, null, new Span("foo", 1)).observe(),
+            () -> new BdObserver(stack, null, new Span("foo", 1)).observe(),
             "a child without a binding is always legal under any parent"
         );
     }
@@ -29,7 +29,7 @@ final class ObservedBindingTest {
         stack.push(0, 1, Kind.HEAD, Openness.OPEN);
         Assertions.assertThrows(
             ParseError.class,
-            () -> new ObservedBinding(stack, "tag", new Span("foo", 1)).observe(),
+            () -> new BdObserver(stack, "tag", new Span("foo", 1)).observe(),
             "a binding on a top-level object is illegal per R-3.12.3"
         );
     }
@@ -41,7 +41,7 @@ final class ObservedBindingTest {
         stack.push(2, 2, Kind.HEAD, Openness.OPEN);
         Assertions.assertThrows(
             ParseError.class,
-            () -> new ObservedBinding(stack, "tag", new Span("  foo", 2)).observe(),
+            () -> new BdObserver(stack, "tag", new Span("  foo", 2)).observe(),
             "a binding under a formation body is illegal per R-3.12.3"
         );
     }
@@ -54,7 +54,7 @@ final class ObservedBindingTest {
         stack.top().child();
         Assertions.assertThrows(
             ParseError.class,
-            () -> new ObservedBinding(stack, "tag", new Span("  foo", 2)).observe(),
+            () -> new BdObserver(stack, "tag", new Span("  foo", 2)).observe(),
             "a binding on the receiver (first child) of a reversed dispatch is illegal per R-6.6.3"
         );
     }

@@ -83,7 +83,7 @@ final class LnApplication implements Line {
             openness = Openness.OPEN;
         }
         this.transition(stack, suffix, kind, openness);
-        new ObservedBinding(stack, outer, this.span).observe();
+        new BdObserver(stack, outer, this.span).observe();
         globals.clearBlanks();
         globals.markEmitted();
         this.emit(emit, suffix, head, chain, args);
