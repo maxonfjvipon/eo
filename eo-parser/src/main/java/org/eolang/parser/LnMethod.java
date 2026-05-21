@@ -62,19 +62,19 @@ final class LnMethod implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.checkPlain(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).checkPlain();
         this.precheck(stack);
         final Level top = stack.top();
         final Tokens tokens = this.dottedTokens();
         tokens.seek(tokens.cursor() + 1);
         final Value method = tokens.readMethodName();
         final List<Value> args = tokens.readArgs();
-        Bindings.checkAllOrNothing(args, this.span);
+        new AllOrNothing(args, this.span).check();
         final String outer = LnApplication.readOuterBinding(tokens);
         final Suffix suffix = new Suffix(
             tokens.tail(), this.span, this.span.indent() + tokens.cursor()
         );
-        Comments.attach(globals, emit, this.span, suffix.present());
+        new Comments(globals, emit, this.span, suffix.present()).attach();
         if (outer != null && stack.below() != null) {
             stack.below().upgradeArgBinding();
         }

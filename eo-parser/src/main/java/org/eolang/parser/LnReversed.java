@@ -60,7 +60,7 @@ final class LnReversed implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.checkPlain(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).checkPlain();
         final Tokens tokens = new Tokens(this.span.body(), this.span);
         final Value head = LnReversed.readHead(tokens);
         if (tokens.atEnd() || tokens.current() != '.') {
@@ -72,16 +72,16 @@ final class LnReversed implements Line {
         tokens.seek(tokens.cursor() + 1);
         final List<Value> args = tokens.readArgs();
         if (!args.isEmpty()) {
-            Bindings.checkReceiver(args.get(0), this.span);
-            Bindings.checkAllOrNothing(
+            new ReceiverBinding(args.get(0), this.span).check();
+            new AllOrNothing(
                 args.subList(1, args.size()), this.span
-            );
+            ).check();
         }
         final String outer = LnApplication.readOuterBinding(tokens);
         final Suffix suffix = new Suffix(
             tokens.tail(), this.span, this.span.indent() + tokens.cursor()
         );
-        Comments.attach(globals, emit, this.span, suffix.present());
+        new Comments(globals, emit, this.span, suffix.present()).attach();
         final Kind kind;
         final Openness openness;
         if (args.isEmpty()) {
@@ -92,7 +92,7 @@ final class LnReversed implements Line {
             openness = Openness.HORIZONTAL_COMPLETED;
         }
         this.transition(stack, suffix, kind, openness);
-        Bindings.observeChild(stack, outer, this.span);
+        new ObservedBinding(stack, outer, this.span).observe();
         globals.clearBlanks();
         globals.markEmitted();
         emit.object(

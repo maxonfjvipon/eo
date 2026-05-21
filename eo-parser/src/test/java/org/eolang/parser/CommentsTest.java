@@ -22,7 +22,7 @@ final class CommentsTest {
         final Globals globals = new Globals();
         globals.addComment(new Span("# hello", 1));
         final Emit emit = new Emit();
-        Comments.attach(globals, emit, new Span("[] > foo", 2), true);
+        new Comments(globals, emit, new Span("[] > foo", 2), true).attach();
         MatcherAssert.assertThat(
             "a comment at the same indent must flush to /object/comments when followed by a named line",
             CommentsTest.render(emit),
@@ -34,7 +34,7 @@ final class CommentsTest {
     void clearsBufferAfterAttachment() {
         final Globals globals = new Globals();
         globals.addComment(new Span("# x", 1));
-        Comments.attach(globals, new Emit(), new Span("[] > foo", 2), true);
+        new Comments(globals, new Emit(), new Span("[] > foo", 2), true).attach();
         MatcherAssert.assertThat(
             "after flushing the comment buffer must be empty so the EOF check stays quiet",
             globals.pendingComments(),
@@ -46,7 +46,7 @@ final class CommentsTest {
     void defersAttachmentWhenLineIsUnnamed() {
         final Globals globals = new Globals();
         globals.addComment(new Span("# orphan", 1));
-        Comments.attach(globals, new Emit(), new Span("foo", 2), false);
+        new Comments(globals, new Emit(), new Span("foo", 2), false).attach();
         MatcherAssert.assertThat(
             "an unnamed follower must leave the comment buffered for a later same-indent named line — no immediate error",
             globals.pendingComments(),
@@ -58,7 +58,7 @@ final class CommentsTest {
     void defersAttachmentWhenIndentMismatches() {
         final Globals globals = new Globals();
         globals.addComment(new Span("# at-zero", 1));
-        Comments.attach(globals, new Emit(), new Span("  [] > inner", 2), true);
+        new Comments(globals, new Emit(), new Span("  [] > inner", 2), true).attach();
         MatcherAssert.assertThat(
             "a deeper-indent named line must not attach the buffered comment — it stays pending",
             globals.pendingComments(),
@@ -71,7 +71,7 @@ final class CommentsTest {
         final Globals globals = new Globals();
         globals.addComment(new Span("# split", 1));
         globals.blank();
-        Comments.attach(globals, new Emit(), new Span("[] > foo", 3), true);
+        new Comments(globals, new Emit(), new Span("[] > foo", 3), true).attach();
         MatcherAssert.assertThat(
             "a blank line between comment and named line breaks attachment per R-6.5.2 — buffer stays pending until EOF",
             globals.pendingComments(),
@@ -82,7 +82,7 @@ final class CommentsTest {
     @Test
     void doesNothingWhenBufferEmpty() {
         final Emit emit = new Emit();
-        Comments.attach(new Globals(), emit, new Span("[] > foo", 1), true);
+        new Comments(new Globals(), emit, new Span("[] > foo", 1), true).attach();
         MatcherAssert.assertThat(
             "with no pending comments the helper must not emit anything — directives stay empty",
             CommentsTest.render(emit),

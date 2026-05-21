@@ -5,16 +5,16 @@
 package org.eolang.parser;
 
 /**
- * Blank-line bookkeeping helpers for {@link Line} subclasses — §6.5 of
- * the spec.
+ * Blank-line bookkeeping for a single {@link Line} — §6.5 of the
+ * spec.
  *
  * <p>R-6.5.3 caps consecutive blanks at one (enforced in
  * {@link LnBlank}). R-6.5.4 forbids a blank line before a plain child
  * or between two plain siblings — enforced here by
- * {@link #checkPlain}.</p>
+ * {@link #checkPlain()}.</p>
  *
  * <p>R-6.5.5 requires exactly one blank line between the meta header
- * and whatever follows; enforced by {@link #checkAfterMetas}, which
+ * and whatever follows; enforced by {@link #enterAfterMeta()}, which
  * fires from the first non-meta non-blank line when the parser has
  * accumulated meta directives but not yet seen any blank.</p>
  *
@@ -23,10 +23,30 @@ package org.eolang.parser;
 final class Blanks {
 
     /**
-     * Utility class.
+     * The line being checked.
      */
-    private Blanks() {
-        // never called
+    private final Span span;
+
+    /**
+     * The global parser state (blank counter, meta-header window).
+     */
+    private final Globals globals;
+
+    /**
+     * The directives sink, used to emit recoverable errors.
+     */
+    private final Emit emit;
+
+    /**
+     * Ctor.
+     * @param src The line's source span
+     * @param state The global parser state
+     * @param sink The directives sink
+     */
+    Blanks(final Span src, final Globals state, final Emit sink) {
+        this.span = src;
+        this.globals = state;
+        this.emit = sink;
     }
 
     /**
@@ -35,15 +55,12 @@ final class Blanks {
      * (formations, atoms, only-phi formations, {@code +>} tests)
      * are exempt and call this method only when they want to *not*
      * exempt themselves.
-     * @param span The offending line's span (used for error position)
-     * @param globals The global parser state
-     * @param emit The directives sink
      */
-    static void checkPlain(final Span span, final Globals globals, final Emit emit) {
-        Blanks.enterAfterMeta(span, globals, emit);
-        if (globals.pendingBlanks() > 0) {
-            emit.error(
-                span.line(), span.indent(),
+    void checkPlain() {
+        this.enterAfterMeta();
+        if (this.globals.pendingBlanks() > 0) {
+            this.emit.error(
+                this.span.line(), this.span.indent(),
                 "blank line before a plain object is forbidden (R-6.5.4); only master objects (formations, atoms, only-phi formations, +> tests) may be preceded by a blank line"
             );
         }
@@ -53,21 +70,18 @@ final class Blanks {
      * Report R-6.5.5 — the first non-meta non-blank line after the
      * meta header must be preceded by exactly one blank line. Closes
      * the meta-header window so subsequent lines are not re-checked.
-     * @param span The first post-meta line's span
-     * @param globals The global parser state
-     * @param emit The directives sink
      */
-    static void enterAfterMeta(final Span span, final Globals globals, final Emit emit) {
-        if (globals.inMetaHeader()) {
-            if (globals.pendingBlanks() == 0) {
-                emit.error(
-                    span.line(), span.indent(),
+    void enterAfterMeta() {
+        if (this.globals.inMetaHeader()) {
+            if (this.globals.pendingBlanks() == 0) {
+                this.emit.error(
+                    this.span.line(), this.span.indent(),
                     "missing blank line between meta header and the first non-meta line (R-6.5.5); exactly one blank must separate them"
                 );
             } else {
-                globals.clearBlanks();
+                this.globals.clearBlanks();
             }
-            globals.closeMetaHeader();
+            this.globals.closeMetaHeader();
         }
     }
 }

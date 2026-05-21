@@ -59,7 +59,7 @@ final class LnCompactTuple implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.checkPlain(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).checkPlain();
         final Tokens tokens = new Tokens(this.span.body(), this.span);
         final Value head = tokens.readValue();
         final List<MethodChain> chain;

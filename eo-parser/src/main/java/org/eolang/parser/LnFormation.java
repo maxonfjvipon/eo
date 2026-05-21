@@ -44,7 +44,7 @@ final class LnFormation implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.enterAfterMeta(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).enterAfterMeta();
         final String body = this.span.body();
         final int close = LnFormation.findClosing(body, this.span);
         final List<String> params = LnFormation.params(body, close, this.span);
@@ -59,7 +59,7 @@ final class LnFormation implements Line {
         final Suffix suffix = new Suffix(
             tail, this.span, this.span.indent() + close + 1 + LnFormation.bindingWidth(binding)
         );
-        Comments.attach(globals, emit, this.span, suffix.present());
+        new Comments(globals, emit, this.span, suffix.present()).attach();
         this.transition(stack, suffix);
         globals.clearBlanks();
         globals.markEmitted();

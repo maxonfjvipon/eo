@@ -57,7 +57,7 @@ final class LnOnlyPhi implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.enterAfterMeta(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).enterAfterMeta();
         final String body = this.span.body();
         final int phi = body.indexOf("> [");
         if (phi < 0) {
@@ -88,7 +88,7 @@ final class LnOnlyPhi implements Line {
         final Suffix suffix = new Suffix(
             rhs, this.span, this.span.indent() + close + 1
         );
-        Comments.attach(globals, emit, this.span, suffix.present() || suffix.test());
+        new Comments(globals, emit, this.span, suffix.present() || suffix.test()).attach();
         this.transition(stack, suffix);
         globals.clearBlanks();
         globals.markEmitted();

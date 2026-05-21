@@ -41,7 +41,7 @@ final class LnTextBlock implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.checkPlain(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).checkPlain();
         final String body = this.span.body();
         if (!body.startsWith("\"\"\"")) {
             throw new ParseError(

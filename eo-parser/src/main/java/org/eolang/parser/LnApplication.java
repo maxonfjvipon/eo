@@ -57,12 +57,12 @@ final class LnApplication implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.checkPlain(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).checkPlain();
         final Tokens tokens = new Tokens(this.span.body(), this.span);
         final Value head = tokens.readValue();
         final List<MethodChain> chain = tokens.readChain();
         final List<Value> args = tokens.readArgs();
-        Bindings.checkAllOrNothing(args, this.span);
+        new AllOrNothing(args, this.span).check();
         final String outer = LnApplication.readOuterBinding(tokens);
         final Suffix suffix = new Suffix(
             tokens.tail(), this.span, this.span.indent() + tokens.cursor()
@@ -74,7 +74,7 @@ final class LnApplication implements Line {
                 "redundant parentheses around a top-level expression — drop the outer `(` and `)`"
             );
         }
-        Comments.attach(globals, emit, this.span, suffix.present());
+        new Comments(globals, emit, this.span, suffix.present()).attach();
         final Kind kind = LnApplication.classify(chain, args);
         final Openness openness;
         if (kind == Kind.HAPPLICATION) {
@@ -83,7 +83,7 @@ final class LnApplication implements Line {
             openness = Openness.OPEN;
         }
         this.transition(stack, suffix, kind, openness);
-        Bindings.observeChild(stack, outer, this.span);
+        new ObservedBinding(stack, outer, this.span).observe();
         globals.clearBlanks();
         globals.markEmitted();
         this.emit(emit, suffix, head, chain, args);

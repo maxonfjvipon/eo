@@ -48,7 +48,7 @@ final class LnComment implements Line {
 
     @Override
     public void into(final Stack stack, final Globals globals, final Emit emit) {
-        Blanks.enterAfterMeta(this.span, globals, emit);
+        new Blanks(this.span, globals, emit).enterAfterMeta();
         final List<Span> pending = globals.pendingComments();
         if (!pending.isEmpty()) {
             final Span head = pending.get(0);
