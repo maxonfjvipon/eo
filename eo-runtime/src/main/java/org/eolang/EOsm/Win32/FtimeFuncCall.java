@@ -39,7 +39,7 @@ public final class FtimeFuncCall implements Syscall {
         final Phi result = this.win.take("return").copy();
         final FtimeFuncCall.Timeb timeb = new FtimeFuncCall.Timeb();
         Msvcrt.INSTANCE._ftime(timeb);
-        result.put(0, new Data.ToPhi(true));
+        result.put(0, new Data.ToPhi(0));
         final Phi struct = this.win.take("timeb");
         struct.put(0, new Data.ToPhi(timeb.time));
         struct.put(1, new Data.ToPhi(timeb.millitm));
