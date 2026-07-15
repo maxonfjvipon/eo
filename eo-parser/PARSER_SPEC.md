@@ -21,7 +21,7 @@ The spec is written from simple constructs to complex; each section builds on te
 Special XMIR markers used in this spec:
 
 | Marker | Meaning |
-|---|---|
+| --- | --- |
 | `<o>` | A single EO object node. Carries `name`, `base`, line/column attributes. |
 | `<part>` | Sub-element of a meta directive (§3.2). |
 | `@as='name'` | Attribute on an `<o>` indicating which slot of the parent it fills (used for inline bindings, §3.12). |
@@ -159,10 +159,10 @@ Illegal:
 The parser recognises the following lexical tokens:
 
 | Token | Description / pattern |
-|---|---|
+| --- | --- |
 | `META` | `+` `NAME` followed by zero or more space-separated parts; each part is one or more non-whitespace characters. Parts may contain `:`, `.`, `-`, `/`, e.g. `+rt jvm a.b.c:lib:1.0.0`. |
 | `COMMENTARY` | `#` followed by the rest of the line. |
-| `NAME` | `[a-z]` followed by characters other than space, line break, tab, `,`, `.`, `|`, `'`, `:`, `;`, `!`, `?`, `]`, `[`, `}`, `{`, `)`, `(`, `🌵`. |
+| `NAME` | `[a-z]` followed by characters other than space, line break, tab, `,`, `.`, `\|`, `'`, `:`, `;`, `!`, `?`, `]`, `[`, `}`, `{`, `)`, `(`, `🌵`. |
 | `PHI` | `@` |
 | `RHO` | `^` |
 | `ROOT` | `Q` |
@@ -196,12 +196,13 @@ Each non-blank, non-comment line is classified into exactly one shape, determine
 ### 3.1 Classification table
 
 | First char (after indent) | Lookahead | Line shape |
-|---|---|---|
+| --- | --- | --- |
 | `+` | followed by digit | signed-number application (see §3.6) |
 | `+` | followed by `+>` | test-attribute shorthand — `++> name` desugars to `[] +> name` (§3.4 / R-6.3.6) |
 | `+` | otherwise | meta directive (§3.2) |
 | `#` | — | comment (§3.3) |
 | `.` | — | method-dispatch line (§3.5) |
+| `\|` | — | pipe-application line (§3.14) |
 | `[` | — | formation line (§3.4) |
 | `"""` (start of line, no other content) | — | text-block opener (§3.11) |
 | identifier | ends with `.` followed by space/EOL | reversed-dispatch line (§3.8) |
@@ -477,7 +478,7 @@ There are **four base forms** of name suffix (mutually exclusive on any one line
 **Base forms:**
 
 | Form | Meaning |
-|---|---|
+| --- | --- |
 | `> name` | Explicit name. Optional trailing `!` for const. Optional ` /sig` to declare an atom. |
 | `>>` | Auto-generated name (deterministic, derived from line and column). Optional `!`. Atom signature forbidden. |
 | `+> name` | Test attribute. `name` must be a `NAME` token, not `PHI` (`@`) — see R-6.3.5. Legal only at indent level 1 of a top-level object (§6.3). |
@@ -486,7 +487,7 @@ There are **four base forms** of name suffix (mutually exclusive on any one line
 **Inline-phi composite forms** (introduce an inline-phi formation as the line's outer kind):
 
 | Form | Meaning |
-|---|---|
+| --- | --- |
 | `> [params] > name` | Inline-phi formation with **explicit** name. |
 | `> [params] >>` | Inline-phi formation with **auto-generated** name (the right-hand side `>>` replaces `> name`). |
 
@@ -587,6 +588,52 @@ size.
 ```
 
 **Implication for the classifier.** Before §3.1 runs, the lexer must scan ahead: if a line's last non-whitespace character is `-` and that line contains a partial BYTES token, the lexer consumes additional lines until the BYTES token is complete, then emits a single virtual line for classification. The indent stack (§5) is unaffected — the multi-line BYTES is one expression at one indent.
+
+### 3.14 Pipe application — `| [arg…] [> name]`
+
+A line whose first non-space character is `|` is a *pipe-application line*. It applies arguments to the **same-indent predecessor** — the object declared on the lines just above it — without naming that object at the call site. This is the surface form of phi-calculus *formation-with-application* `⟦…⟧(…)`: the predecessor is formed, then the pipe supplies its arguments. The `|` reads as an up-arrow to "the object above".
+
+R-3.14.1. The `|` is followed by a single space, then either a horizontal argument list (§3.6) or nothing, then an optional name suffix (§3.10). Its tail is parsed exactly as an application's argument list plus suffix — the pipe supplies the arguments; the *head* is the implicit predecessor.
+
+R-3.14.2. **Predecessor requirement.** The stack top at the pipe's indent must be a **formation** (`bare-formation` or `inline-phi-formation`) or another **pipe-application**, and it must be **named** (an explicit `> name` or an auto-generated `>>`). A pipe with no predecessor (top-level / empty stack), a deeper-indent ("descending") pipe, or a pipe whose predecessor is an unnamed formation, a plain value, an application, or any `.method` dispatch is an error. The named requirement is what lets the pipe refer to the predecessor by name (R-3.14.7); an unnamed formation cannot be a pipe target — give it a `>>`.
+
+R-3.14.3. **Two forms**, distinguished by whether horizontal args are present on the line:
+  - **Horizontal form** — `| arg1 arg2 … [> name]` (≥1 arg): the args are the application arguments. The line takes no deeper-indent children (`vertical-completed`), but may still be wrapped by a same-indent `.method` (§3.5) or extended by a following pipe (chained application, R-3.14.5).
+  - **Vertical form** — `| [> name]` (0 args on the line): a deeper-indent argument block follows, exactly as under a `vapplication` head (§4.1). The args become the application arguments.
+
+R-3.14.4. **No pipe after `.method`.** A pipe may follow a formation or another pipe only. Once a `.method` has dispatched an attribute off the predecessor, the formation is no longer the object in hand, so a pipe after a `.method` line (of any completion state) is rejected. Cross-line ownership: §5.2 (R-5.2.4a / R-5.2.5a / R-5.2.11a). Conversely a `.method` **after** a pipe is legal (the pipe application is a complete value); a pipe after a pipe is legal (R-3.14.5).
+
+R-3.14.5. **Chaining.** Consecutive pipe lines build left-associated applications: `| a` then `| b` after formation `F` is `((F a) b)`, two applications. Each pipe in a chain is its own object and so must be named (R-3.14.2 applies to the *predecessor*, which for the second pipe is the first pipe). Contrast a single `| a b` (one application, two args).
+
+R-3.14.6. Name suffix per §3.10: `> name`, `>>`, or none (the last only when the pipe is an unnamed intermediate immediately wrapped by a `.method`, which names the whole chain). The atom signature `/sig` and the test attribute `+> name` are rejected — a pipe is an application, not a formation. All-or-nothing inline binding (§6.6) applies to the argument group.
+
+R-3.14.7. **Emission / XMIR.** A pipe line desugars to an ordinary application whose head is a reference to the (named) predecessor, and the predecessor object stays in place. So `| a > r` after a formation `F` (named `F`) is identical in XMIR to `F a > r`; `| a` then `| b` after `F >>` (auto-name `A`) is `A a` (auto-named) followed by `A′ b`. The parser emits the pipe line as a base-less `<o pipe=''>` with the args as children; the `wrap-applications` reshape (§9) sets `@base` from the preceding sibling's `@name` and drops `@pipe`, so every downstream pass (scope resolution, base rolling) treats it as a hand-written application.
+
+Outer kind: **`pipe-application`** (openness `open` for the vertical form's body, `vertical-completed` for the horizontal form).
+
+```
+[x] > foo                             ← named formation
+  x.plus x > @
+| 5 > foo5                            ← foo5 = foo applied to 5 (i.e. (5).plus 5)
+
+[a b] >>                              ← auto-named (anonymous) formation
+  a.plus b > @
+| 2 3 > pair                          ← one application, two args, referring to the auto-name
+```
+
+Illegal:
+
+```
+6 > six
+| 5 > n                               ← rejected: predecessor `six` is not a formation or pipe
+
+[x] > foo
+  ...
+.x
+| 6 > n                               ← rejected: pipe after a `.method`
+
+| 5 > n                               ← rejected: no object above
+```
 
 ---
 
@@ -749,9 +796,12 @@ R-5.2.3. **MethodDispatch line dispatch.** If the line's kind is `MethodDispatch
 
 R-5.2.4. **Non-MethodDispatch same-indent line.** If the line's kind is **not** MethodDispatch: the top entry is a *completed previous sibling*. Run close-time checks (§5.3) on it, then **replace** it with a new entry built from the new line. The new entry's `parent_kind` is read from the stack entry below.
 
+R-5.2.4a. **PipeApplication same-indent line.** A `PipeApplication` line (§3.14) is a Non-MethodDispatch line and so replaces the top per R-5.2.4, but first the top must satisfy R-3.14.2: its kind must be `bare-formation`, `inline-phi-formation`, or `pipe-application`, and it must be named. Otherwise error `a pipe must follow a named formation or another pipe` (§9.9). In particular a top whose kind is `vmethod` / `vmethod-with-hargs` (a `.method` was taken off the predecessor) fails this check — R-3.14.4.
+
 **Step C — Deeper line.** If the top entry now has indent < `N`:
 
-R-5.2.5. If the line's kind is `MethodDispatch`: error `method continuation has no expression to attach to`. A `.method` line at indent `N` requires a previous sibling expression at the same indent; a deeper-than-parent position has no such sibling. **This rule is the authoritative owner of the `.method`-as-deeper-line rejection**, including the bare-reversed-receiver edge case (a `.method` line as the first deeper child of a bare-reversed parent). R-5.2.9's "must not start with `.`" condition is enforced *via this rule*; R-5.2.9 itself only manages the `receiver_consumed?` flag.
+R-5.2.5. If the line's kind is `MethodDispatch`: error `method continuation has no expression to attach to`.
+R-5.2.5a. If the line's kind is `PipeApplication`: error `a pipe must follow a named formation or another pipe` — a deeper-indent ("descending") pipe has no same-indent predecessor to apply to. A `.method` line at indent `N` requires a previous sibling expression at the same indent; a deeper-than-parent position has no such sibling. **This rule is the authoritative owner of the `.method`-as-deeper-line rejection**, including the bare-reversed-receiver edge case (a `.method` line as the first deeper child of a bare-reversed parent). R-5.2.9's "must not start with `.`" condition is enforced *via this rule*; R-5.2.9 itself only manages the `receiver_consumed?` flag.
 R-5.2.6. The previous top's openness must be `open`. If `vertical-completed` or `horizontal-completed`: error `unexpected deeper-indent line — previous expression is closed for children`.
 R-5.2.7. `N` must equal `previous_top.indent + 2`. Otherwise: error `indent increased by more than one level`.
 R-5.2.8. Push a new entry. Its `parent_kind` is the previous top's `kind`.
@@ -761,6 +811,7 @@ R-5.2.9. If `parent_kind = bare-reversed` and the previous top's `receiver_consu
 
 R-5.2.10. If the line's kind is `MethodDispatch`: error `method continuation has no expression to attach to` (§9.9). A `.method` line requires a previous-sibling expression at the same indent; an empty stack has no such sibling.
 R-5.2.11. Otherwise: the line is the program's top-level object. Push a new entry with `parent_kind = top-level`. If the line's kind is `Meta` and a non-meta object has already been emitted: error (R-3.2.2).
+R-5.2.11a. If the line's kind is `PipeApplication`: error `a pipe must follow a named formation or another pipe` — an empty stack has no object above to apply to.
 
 ### 5.3 Close-time checks
 
@@ -819,7 +870,7 @@ foo a b                               ← happlication, horizontally-completed
 .method > result                      ← rejected: cannot wrap horizontal app
 
 io.stdout                             ← hmethod (0 hargs), open
-  tt.sprintf                          ← deeper arg, fine
+  string.sprintf                      ← deeper arg, fine
 
 x.put 2                               ← happlication, horizontally-completed
   something                           ← rejected: closed for deeper children
@@ -831,7 +882,7 @@ R-6.2.1. Every expression that is a plain child of a formation **must carry a na
 R-6.2.2. The naming line per outer kind:
 
 | Outer kind | Naming line |
-|---|---|
+| --- | --- |
 | Single-line expression (`head`, `hmethod`, `happlication`, `reversed-with-hargs`, `inline-phi-formation`) | that line |
 | `vapplication` | the head line (first) |
 | `vmethod` (chain of same-indent `.method` continuations) | the **last** `.method` line |
@@ -1098,7 +1149,7 @@ Example: a `>>` suffix at `line=12, pos=5` emits `@name="a🌵12-5"`.
 ### 9.3 Source-token to XMIR-character mapping
 
 | Source token | XMIR character | Used as |
-|---|---|---|
+| --- | --- | --- |
 | `@` (PHI) | `φ` | `@name='φ'` for the @-attribute |
 | `^` (RHO) | `ρ` | `@base='ρ'` for parent reference |
 | `Q` (ROOT) | `Φ` | `@base='Φ...'` for root-rooted FQNs |
@@ -1109,7 +1160,7 @@ Example: a `>>` suffix at `line=12, pos=5` emits `@name="a🌵12-5"`.
 ### 9.4 Per-construct attribute emission
 
 | Source construct | XMIR effect |
-|---|---|
+| --- | --- |
 | Void parameter `[a b c]` | Each param emits `<o name='<param>' base='∅'/>` as a void child |
 | Const-marker `> name!` | `@const` attribute (empty value: `@const=""`) |
 | Test attribute `[] +> name` | `@name='+<name>'` (the `+` prefix marks it as a test) |
@@ -1128,7 +1179,7 @@ R-9.4.1. `@method` and `@as='αN'` are intermediate attributes; they may be tran
 For each outer kind, this table fixes the order of `<o>` children inside its emitted element. Two implementations must produce identical sibling ordering.
 
 | Outer kind | Children in this order |
-|---|---|
+| --- | --- |
 | `head` | none (single self-contained `<o>` carrying `@base`). |
 | `hmethod` (single line, 0 hargs) | Emits a **sequence of sibling `<o>`s** under the enclosing parent: (1) the receiver of the chain as the first sibling; (2) one `<o base='.<methodname>' method=''>` per `.method` segment, in source order. Because the whole chain lives on **one source line**, only the last `.method` segment can carry a name suffix (the line's `> name`); intermediate segments on the same line have no syntactic place for their own name. (The intermediate-names provision of R-6.2.3 applies only to `vmethod` chains, where each `.method` is on its own line.) See R-9.0.3 for the convention. |
 | `happlication`, `vapplication` | The outer `<o>` carries `@base = head reference` (or, for chained heads, the last link's `<o>` is the outer one — R-9.0.3.1). Arguments emit as direct children of that `<o>` in source order. |
@@ -1167,7 +1218,7 @@ R-9.7.2. The `TEXT` token is delimited by `"""` markers (the opening `"""` must 
 R-9.7.3. **Escape sequence table.** Recognised in both `STRING` and `TEXT`:
 
 | Sequence | Meaning |
-|---|---|
+| --- | --- |
 | `\b` | U+0008 (backspace) |
 | `\t` | U+0009 (tab) |
 | `\n` | U+000A (newline) |
@@ -1196,7 +1247,7 @@ Two parsers should report the same condition with identical message strings for 
 R-9.9.1. Every error condition in this spec has a single canonical text — **including lexical and indent-related errors** (e.g., `unexpected odd indent`, `tab character in leading whitespace`, `invalid signed-number literal`), not only parse-phase errors. The table below assigns one to each. Implementations must use the exact string (with the position prefix as the only variable part).
 
 | Condition | Canonical message |
-|---|---|
+| --- | --- |
 | Odd indent | `unexpected odd indent` |
 | Indent jump > 1 level | `indent increased by more than one level` |
 | Tab in leading whitespace | `tab character in leading whitespace` |
@@ -1252,7 +1303,7 @@ R-9.9.3. New error conditions added to the spec must extend this table with a ca
 **Notation:** a kind's *openness* (open / vertical-completed / horizontal-completed) is a separate dimension from its kind name. The same kind progresses through openness states as more lines arrive; the kind name itself does not change. Below, "after block closes" means the kind's openness has transitioned to `vertical-completed`.
 
 | Outer kind | Cardinality | Open for deeper children? | Wrappable by same-indent `.method`? | Notes |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `head` | 1 line | yes | yes (after) | bare identifier / literal / group, no chain, no hargs |
 | `hmethod` | 1 line | yes (if 0 hargs) | yes (after) | `x.y.z` chained dispatch with 0 hargs only |
 | `happlication` | 1 line | **no** | **no** | head + ≥1 horizontal args. Subsumes "hmethod with hargs" (the chained head doesn't change the outer kind). |
@@ -1264,6 +1315,7 @@ R-9.9.3. New error conditions added to the spec must extend this table with a ca
 | `vapplication` | multi-line | yes while in progress | yes after block closes | head + vertical block |
 | `vmethod` | multi-line | yes while in progress (only if last `.method` has 0 hargs) | yes (more `.method`s extend the chain; same-indent `.method` after block closes wraps it) | chain of `.method` continuations |
 | `vmethod-with-hargs` | multi-line | **no** | **no** | a `.method` continuation line that itself carries ≥1 horizontal args — closes the chain immediately |
+| `pipe-application` | 1 line (+ body if 0 hargs) | yes if 0 hargs (vertical form's args) | yes (after) | `\| [args] [> name]`; applies args to the same-indent named formation/pipe above (§3.14) |
 | `text-block` | multi-line | n/a | yes (after closing `"""`) | `"""…"""` |
 
 **Horizontally-completed kinds (the single source of truth)** — these never receive deeper children and cannot be wrapped by same-indent `.method`:
@@ -1279,11 +1331,12 @@ R-5.2.3 and R-6.1.1 reference this set; if the set changes, change it here, not 
 Reproduced from §3.1 for convenience:
 
 | First non-space char | Lookahead | Shape |
-|---|---|---|
+| --- | --- | --- |
 | `+` digit | — | signed-number app (§3.6) |
 | `+` | otherwise | meta (§3.2) |
 | `#` | — | comment (§3.3) |
 | `.` | — | method-dispatch line (§3.5) |
+| `\|` | — | pipe-application line (§3.14) |
 | `[` | — | formation (§3.4) |
 | `"""` alone | — | text-block opener (§3.11) |
 | identifier | `.` followed by space/EOL | reversed dispatch (§3.8) |
@@ -1330,7 +1383,7 @@ Source:
 Stack evolution:
 
 | After line | Stack (bottom→top) | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `[] > foo` | `[formation@0{kind=formation, parent=top-level, named?=true, open}]` | bare-formation pushed at indent 0 |
 | `  tmpdir` | `[formation@0, head@2{parent=formation, named?=false, open}]` | head pushed at indent 2; parent kind = formation, so naming will be required at close |
 | `  .tmpfile` | `[formation@0, vmethod@2{parent=formation, named?=false, open}]` | same-indent `.method`, top kind extends to vmethod; still no name |
@@ -1349,7 +1402,7 @@ Source:
 ```
 
 | After line | Stack | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `[] > foo /number` | `[atom@0{kind=formation+atom, parent=top-level, named?=true, open}]` | atom pushed at indent 0 |
 | `  a > bad-child` | `[atom@0, head@2{parent=atom, named?=true, open}]` | plain child pushed under atom |
 | EOF | pop indent-2: R-5.3.4 fires — `parent=atom`, but the popped kind is not `formation + +> suffix` → error "atom may contain only test attributes." | |
@@ -1374,7 +1427,7 @@ Source:
 Line-by-line classification highlights:
 
 | Line | Kind | Outer | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `[args] > main` | Formation | bare-formation | top-level master |
 | `  [y] > leap` | Formation | bare-formation | master child of `main`, named `leap` (R-1.3) |
 | `    or. > @` | ReversedDispatch | bare-reversed | vertical form, named `@`; opens block awaiting receiver + args |

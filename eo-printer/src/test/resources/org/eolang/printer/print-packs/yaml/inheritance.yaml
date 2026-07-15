@@ -5,7 +5,7 @@
 origin: |
   +package sandbox
   +alias stdout org.eolang.io.stdout
-  +alias sprintf org.eolang.tt.sprintf
+  +alias sprintf org.eolang.string.sprintf
   +architect yegor256@gmail.com
 
   [] > main
@@ -29,23 +29,17 @@ origin: |
 printed: |
   +package sandbox
   +alias stdout Q.org.eolang.io.stdout
-  +alias sprintf Q.org.eolang.tt.sprintf
+  +alias sprintf Q.org.eolang.string.sprintf
   +architect yegor256@gmail.com
 
   [] > main
     [] > base
-      memory > x
-        0
+      memory 0 > x
       [self v] > f
-        ^.x.write > @
-          v
+        ^.x.write v > @
       [self v] > g
-        self.f > @
-          self
-          v
+        self.f self v > @
     [] > derived
       ^.base > @
       [self v] > f
-        self.g > @
-          self
-          v
+        self.g self v > @
