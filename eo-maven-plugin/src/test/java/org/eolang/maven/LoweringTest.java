@@ -279,8 +279,12 @@ final class LoweringTest {
     private static String ended(final Protocol protocol, final String pad) {
         final StringBuilder out = new StringBuilder(pad);
         if (protocol.again().isEmpty()) {
-            out.append("answer ").append(protocol.answer())
-                .append(' ').append(protocol.carrier());
+            if (protocol.reason().isEmpty()) {
+                out.append("answer ").append(protocol.answer())
+                    .append(' ').append(protocol.carrier());
+            } else {
+                out.append("fail ").append(protocol.reason());
+            }
         } else {
             out.append("repeat");
             if (!protocol.target().isEmpty()) {

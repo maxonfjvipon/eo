@@ -69,6 +69,32 @@ final class ForkTest {
     }
 
     @Test
+    void answersWithArmThatDoesNotFail() {
+        MatcherAssert.assertThat(
+            "a fork failing in one arm must answer what the other arm does, but it doesnt",
+            new Fork(
+                "s2", "L_bool_if", "sym:s1",
+                new Protocol(Collections.emptyList(), "sym:v0", "number"),
+                new Protocol(Collections.emptyList(), "string:6F-70-73")
+            ).forma(),
+            Matchers.equalTo("number")
+        );
+    }
+
+    @Test
+    void answersNothingWhenBothArmsFail() {
+        MatcherAssert.assertThat(
+            "a fork whose both arms fail has no value and must name no forma, but it did",
+            new Fork(
+                "s2", "L_bool_if", "sym:s1",
+                new Protocol(Collections.emptyList(), "string:6F-70-73"),
+                new Protocol(Collections.emptyList(), "sym:v1")
+            ).forma(),
+            Matchers.equalTo("")
+        );
+    }
+
+    @Test
     void readsOnlyItsCondition() {
         MatcherAssert.assertThat(
             "the one key a fork reads directly must be its condition, but it isnt",

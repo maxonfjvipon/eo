@@ -62,4 +62,44 @@ final class ProtocolTest {
             Matchers.equalTo("bool")
         );
     }
+
+    @Test
+    void failsWithGivenReason() {
+        MatcherAssert.assertThat(
+            "the reason must come back as given, but it didnt",
+            new Protocol(Collections.emptyList(), "sym:v0").reason(),
+            Matchers.equalTo("sym:v0")
+        );
+    }
+
+    @Test
+    void answersNothingWhenFailing() {
+        MatcherAssert.assertThat(
+            "a failing program has no answer and no carrier, but it named one",
+            String.join(
+                "",
+                new Protocol(Collections.emptyList(), "sym:v0").answer(),
+                new Protocol(Collections.emptyList(), "sym:v0").carrier()
+            ),
+            Matchers.emptyString()
+        );
+    }
+
+    @Test
+    void doesNotRepeatWhenFailing() {
+        MatcherAssert.assertThat(
+            "a failing program needs no loop, but it asks for one",
+            new Protocol(Collections.emptyList(), "sym:v0").repeats(),
+            Matchers.is(false)
+        );
+    }
+
+    @Test
+    void failsWithNothingWhenAnswering() {
+        MatcherAssert.assertThat(
+            "an answering program has no reason to fail, but it names one",
+            new Protocol(Collections.emptyList(), "sym:v0", "bytes").reason(),
+            Matchers.emptyString()
+        );
+    }
 }

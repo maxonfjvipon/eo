@@ -144,6 +144,65 @@ final class ParsedTest {
     }
 
     @Test
+    void readsTerminatorAsFailure() {
+        MatcherAssert.assertThat(
+            "the terminator must read as a failure carrying its reason, but it doesnt",
+            new Parsed(
+                new Xnav(
+                    String.join(
+                        "",
+                        "<o base='⊥'>",
+                        "<o as='α0' base='Φ.string'>",
+                        "<o as='α0' base='Φ.bytes'><o as='α0'>6F-70-73</o></o>",
+                        "</o>",
+                        "</o>"
+                    )
+                ).element("o"),
+                Collections.singletonMap("x", "number")
+            ).term().terminator().get().reason().key(),
+            Matchers.equalTo("string:6F-70-73")
+        );
+    }
+
+    @Test
+    void readsTerminatorInsideChoice() {
+        MatcherAssert.assertThat(
+            "a terminator in an arm must stand there as a failure, but it doesnt",
+            new Parsed(
+                new Xnav(
+                    String.join(
+                        "",
+                        "<o base='.if'><o base='ξ.x'/>",
+                        "<o as='α0' base='ξ.t'/>",
+                        "<o as='α1' base='⊥'><o as='α0' base='ξ.t'/></o>",
+                        "</o>"
+                    )
+                ).element("o"),
+                ParsedTest.flagged()
+            ).term().phi(),
+            Matchers.endsWith(
+                "α1 ↦ ⟦ r ↦ Φ.string(α0 ↦ Φ.bytes(α0 ↦ ⟦ λ ⤍ Sym_v1 ⟧)), λ ⤍ L_fail ⟧)"
+            )
+        );
+    }
+
+    @Test
+    void refusesTerminatorWithoutReason() {
+        MatcherAssert.assertThat(
+            "a terminator without a reason is malformed, but it parsed",
+            Assertions.assertThrows(
+                IllegalStateException.class,
+                new Parsed(
+                    new Xnav("<o base='⊥'/>").element("o"),
+                    Collections.singletonMap("x", "number")
+                )::term,
+                "a bare terminator parsed, but it must not"
+            ).getMessage(),
+            Matchers.containsString("The terminator must carry exactly one target, not 0")
+        );
+    }
+
+    @Test
     void refusesDataizedOfManyTargets() {
         Assertions.assertThrows(
             IllegalStateException.class,
@@ -296,6 +355,13 @@ final class ParsedTest {
             )::term,
             "a void applied to arguments cannot be reduced, but it was"
         );
+    }
+
+    private static Map<String, String> flagged() {
+        final Map<String, String> out = new LinkedHashMap<>();
+        out.put("x", "bool");
+        out.put("t", "string");
+        return out;
     }
 
     private static Xnav scaled() {

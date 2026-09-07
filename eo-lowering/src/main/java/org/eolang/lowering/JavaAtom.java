@@ -32,7 +32,10 @@ import java.util.stream.Collectors;
  * the fork that ends the program is assigned and followed by
  * {@code break}, and a repeat assigns the voids their next values,
  * through temporaries wherever a value names a void the same repeat
- * rebinds, and continues. A
+ * rebinds, and continues. A path that fails throws an {@code ExFailure}
+ * carrying the reason as its message, the way the terminator itself
+ * does when dataized, so an arm that fails assigns nothing and the
+ * statements after its fork run only when the other arm is taken. A
  * program of several bodies runs the same loop over a state naming the
  * body that runs next: the voids of every body are locals, the
  * formation's read before the loop and the helpers' blank until a repeat
@@ -196,12 +199,7 @@ public final class JavaAtom {
         final String pad = "        ";
         final List<String> out = this.computed(proto, pad, all, "");
         if (proto.again().isEmpty()) {
-            if (!proto.carrier().isEmpty()) {
-                out.add(
-                    String.format("%sout = %s;", pad, this.values.expression(proto.answer()))
-                );
-                out.add(String.format("%sbreak;", pad));
-            }
+            out.addAll(this.closed("out", proto, pad, true));
         } else {
             out.addAll(this.rebound(proto.target(), proto.again(), pad));
         }
@@ -274,16 +272,41 @@ public final class JavaAtom {
         final String pad, final Set<Integer> known, final String exit) {
         final List<String> out = this.computed(arm, pad, known, exit);
         if (arm.again().isEmpty()) {
-            out.add(
-                String.format("%s%s = %s;", pad, label, this.values.expression(arm.answer()))
-            );
-            if (label.equals(exit)) {
-                out.add(String.format("%sbreak;", pad));
-            }
+            out.addAll(this.closed(label, arm, pad, label.equals(exit)));
         } else {
             out.addAll(this.rebound(arm.target(), arm.again(), pad));
         }
         return out;
+    }
+
+    private List<String> closed(final String label, final Protocol proto,
+        final String pad, final boolean exits) {
+        final List<String> out = new ArrayList<>(2);
+        if (proto.reason().isEmpty()) {
+            out.add(
+                String.format("%s%s = %s;", pad, label, this.values.expression(proto.answer()))
+            );
+            if (exits) {
+                out.add(String.format("%sbreak;", pad));
+            }
+        } else {
+            out.add(this.thrown(proto.reason(), pad));
+        }
+        return out;
+    }
+
+    private String thrown(final String reason, final String pad) {
+        if (!"bytes".equals(this.values.forma(reason))) {
+            throw new IllegalStateException(
+                String.format(
+                    "The reason '%s' of the failure does not carry a string", reason
+                )
+            );
+        }
+        return String.format(
+            "%sthrow new ExFailure(\"%%s\", new String(%s, %s));",
+            pad, this.values.expression(reason), "java.nio.charset.StandardCharsets.UTF_8"
+        );
     }
 
     private List<String> rebound(final String target, final List<String> keys,

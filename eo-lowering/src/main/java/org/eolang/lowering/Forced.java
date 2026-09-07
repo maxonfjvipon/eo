@@ -110,6 +110,11 @@ public final class Forced implements Term {
     }
 
     @Override
+    public Optional<Fail> terminator() {
+        return Optional.empty();
+    }
+
+    @Override
     public Term swapped(final Shape shape, final Term swap) {
         final Term out;
         if (this.covered(shape)) {

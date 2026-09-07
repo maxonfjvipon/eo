@@ -75,6 +75,27 @@ final class ProgramTest {
         );
     }
 
+    @Test
+    void refusesProgramThatAlwaysFails() {
+        MatcherAssert.assertThat(
+            "a program whose only body fails never answers and must refuse",
+            Assertions.assertThrows(
+                IllegalStateException.class,
+                new Program(
+                    Collections.singletonList(
+                        new Body(
+                            "", 0, Collections.singletonList("string"),
+                            new Protocol(Collections.emptyList(), "sym:v0")
+                        )
+                    ),
+                    Collections.singletonMap("t", "string")
+                )::carrier,
+                "a program that always fails was given a forma, but it must not be"
+            ).getMessage(),
+            Matchers.containsString("never answers")
+        );
+    }
+
     private static Program bouncing() {
         return new Program(
             Arrays.asList(

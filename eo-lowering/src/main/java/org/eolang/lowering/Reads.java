@@ -23,7 +23,8 @@ import java.util.stream.Stream;
  * left to the protocol of that arm, which decides the same way. Whatever
  * an enclosing block declared already is in scope and is not declared
  * again. The keys a repeat hands the voids count as reads of the
- * protocol that repeats, the way its answer would.</p>
+ * protocol that repeats, the way its answer would, and so does the
+ * reason of a protocol that fails.</p>
  *
  * @since 0.76.0
  */
@@ -81,7 +82,7 @@ public final class Reads {
         final Stream<String> keys = Stream.concat(
             this.protocol.moves().stream().flatMap(step -> step.keys().stream()),
             Stream.concat(
-                Stream.of(this.protocol.answer()),
+                Stream.of(this.protocol.answer(), this.protocol.reason()),
                 this.protocol.again().stream()
             )
         );

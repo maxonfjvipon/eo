@@ -21,10 +21,13 @@ import java.util.List;
  * recursive helper of the formation, in a tail position settles into
  * the name of the body it resumes and the keys the voids of that body
  * take next, one per void in declaration order, and that body runs
- * over them. This is the whole input of code generation: rendering each step
- * as one Java statement, in order, with a block under each arm and a
- * loop around a program that repeats, is a faithful compilation of the
- * fragment.</p>
+ * over them. Or a path may end by failing: a fragment whose tail is the
+ * terminator {@code T} settles into the key of the reason it carries,
+ * and dataizing the fragment there aborts with that reason as the
+ * message. This is the whole input of code generation: rendering each step
+ * as one Java statement, in order, with a block under each arm, a
+ * loop around a program that repeats and a throw where a path fails,
+ * is a faithful compilation of the fragment.</p>
  *
  * @since 0.76.0
  */
@@ -58,13 +61,28 @@ public final class Protocol {
     private final List<String> next;
 
     /**
+     * The key of the reason the fragment fails with, when it fails
+     * instead of answering.
+     */
+    private final String cause;
+
+    /**
      * Ctor.
      * @param moves The steps, in their dependency order
      * @param answer The key of the value the fragment answers with
      * @param carrier The forma of that value
      */
     public Protocol(final List<Step> moves, final String answer, final String carrier) {
-        this(moves, answer, carrier, "", Collections.emptyList());
+        this(moves, answer, carrier, "", Collections.emptyList(), "");
+    }
+
+    /**
+     * Ctor, for a program that fails.
+     * @param moves The steps, in their dependency order
+     * @param reason The key of the reason the fragment fails with
+     */
+    public Protocol(final List<Step> moves, final String reason) {
+        this(moves, "", "", "", Collections.emptyList(), reason);
     }
 
     /**
@@ -85,7 +103,7 @@ public final class Protocol {
      *  next, in declaration order
      */
     public Protocol(final List<Step> moves, final String target, final List<String> again) {
-        this(moves, "", "", target, again);
+        this(moves, "", "", target, again, "");
     }
 
     /**
@@ -95,14 +113,17 @@ public final class Protocol {
      * @param carrier The forma of that value
      * @param target The name of the body resumed, empty for the formation
      * @param again The keys of the values the voids take next
+     * @param reason The key of the reason the fragment fails with
      */
     private Protocol(final List<Step> moves, final String answer,
-        final String carrier, final String target, final List<String> again) {
+        final String carrier, final String target, final List<String> again,
+        final String reason) {
         this.steps = moves;
         this.root = answer;
         this.forma = carrier;
         this.body = target;
         this.next = again;
+        this.cause = reason;
     }
 
     /**
@@ -116,7 +137,7 @@ public final class Protocol {
     /**
      * The key of the value the fragment answers with.
      * @return A key such as {@code sym:s2} or {@code number:40-14-...},
-     *  empty when the program repeats
+     *  empty when the program repeats or fails
      */
     public String answer() {
         return this.root;
@@ -125,7 +146,7 @@ public final class Protocol {
     /**
      * The forma of the value.
      * @return One of {@code number}, {@code bool}, {@code bytes}, empty
-     *  when the program repeats
+     *  when the program repeats or fails
      */
     public String carrier() {
         return this.forma;
@@ -147,6 +168,15 @@ public final class Protocol {
      */
     public List<String> again() {
         return Collections.unmodifiableList(this.next);
+    }
+
+    /**
+     * The key of the reason the program fails with.
+     * @return A key such as {@code sym:s3} or {@code string:68-69-},
+     *  empty when the program answers or repeats
+     */
+    public String reason() {
+        return this.cause;
     }
 
     /**

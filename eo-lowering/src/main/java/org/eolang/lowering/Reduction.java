@@ -55,6 +55,19 @@ import java.util.Optional;
  * the bodies a program is made of, and the order they are reduced in,
  * of {@link Bodies}.</p>
  *
+ * <p>The terminator {@code T} is the other term that never goes to
+ * phino: it has no value, and dataizing it aborts with its reason.
+ * When it is the root of the tree being settled, its reason is reduced
+ * into the same list of steps and must settle into a string, since that
+ * is what the message is made of, and the tree settles into a failure
+ * naming the key of the reason instead of an answer; the Java of that
+ * path throws, so a fork failing in one arm answers what the other arm
+ * does, and may stand anywhere, since nothing below the failing arm
+ * ever runs. When the terminator stands anywhere else, phino parks on
+ * its marker and the fragment is refused, since an operation awaiting
+ * its value would never get one; and a program whose every path fails
+ * answers nothing and is refused too.</p>
+ *
  * <p>A helper the formation binds next to its body is read in place
  * wherever the body names it, by {@link Parsed}, applied to its
  * arguments when it has voids of its own, so the tree phino sees
@@ -204,6 +217,8 @@ public final class Reduction {
         final Protocol out;
         if (tree.again().isPresent()) {
             out = new Repeat(this, minted).protocol(tree.again().get(), steps);
+        } else if (tree.terminator().isPresent()) {
+            out = new Failure(this, minted).protocol(tree.terminator().get(), steps);
         } else {
             out = new Protocol(steps, tree.key(), minted.carried(tree));
         }
@@ -215,14 +230,15 @@ public final class Reduction {
      * @param start The tree
      * @param steps The steps of the protocol being built
      * @param minted The ledger this reduction shares
-     * @return A term with a key, or the call the tree is
+     * @return A term with a key, or the call or the terminator the tree is
      * @throws IOException If the binary cannot be run
      */
     Term reduced(final Term start, final List<Step> steps, final Minted minted)
         throws IOException {
         Term tree = start;
         int round = 0;
-        while (tree.key().isEmpty() && !tree.again().isPresent()) {
+        while (tree.key().isEmpty() && !tree.again().isPresent()
+            && !tree.terminator().isPresent()) {
             if (round >= this.rounds) {
                 throw new IllegalStateException(
                     String.format("The reduction did not settle in %d rounds", this.rounds)
@@ -247,11 +263,7 @@ public final class Reduction {
             if (record.name().startsWith("Sym_")) {
                 continue;
             }
-            if ("L_self".equals(record.name())) {
-                throw new IllegalStateException(
-                    "The call to itself is not in a tail position, so the fragment cannot repeat"
-                );
-            }
+            Reduction.tailed(record);
             final Op operation = new Op(record.name());
             if (!operation.listed()) {
                 excuse = String.format(
@@ -276,6 +288,19 @@ public final class Reduction {
             );
         }
         return out;
+    }
+
+    private static void tailed(final Evaluation record) {
+        if ("L_self".equals(record.name())) {
+            throw new IllegalStateException(
+                "The call to itself is not in a tail position, so the fragment cannot repeat"
+            );
+        }
+        if ("L_fail".equals(record.name())) {
+            throw new IllegalStateException(
+                "The terminator is not in a tail position, so the fragment cannot fail there"
+            );
+        }
     }
 
     private static Optional<Term> applied(final Term tree, final Op operation,
