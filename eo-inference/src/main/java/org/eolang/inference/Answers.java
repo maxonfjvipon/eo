@@ -45,6 +45,13 @@ import java.util.Map;
  * {@code Φ.bool.and.x} turns out to be and would rather be told that
  * {@code Φ.true} and {@code Φ.false} have both been put there.</p>
  *
+ * <p>A type with no behaviour of its own is given the name it behaves as,
+ * which {@link Behaved} worked out and {@link Reduced} wrote on the row. Only
+ * the name is taken from there: the rung is asked of the type the walk
+ * actually arrived at, since that is the object whose voids were filled, and
+ * counting the voids of the name it goes by would describe a copy with nothing
+ * left to fill as still wanting an argument.</p>
+ *
  * @since 0.69.0
  */
 final class Answers {
@@ -108,13 +115,23 @@ final class Answers {
         if (this.ground.contains(end)) {
             found = new Answer(end, 4);
         } else if (this.table.containsKey(end)) {
-            found = new Answer(end, this.depth(end, this.free(end, filled)));
+            found = new Answer(this.behaves(end), this.depth(end, this.free(end, filled)));
         } else if (root.isEmpty()) {
             found = new Answer(end, 0);
         } else if (sole.isEmpty()) {
             found = new Answer(end, 1, this.hollows.get(root));
         } else {
-            found = new Answer(sole, this.depth(sole, this.free(sole, filled)));
+            found = new Answer(this.behaves(sole), this.depth(sole, this.free(sole, filled)));
+        }
+        return found;
+    }
+
+    private String behaves(final String type) {
+        String found = type;
+        for (final Map<String, String> row : this.own(type)) {
+            if (row.containsKey("id")) {
+                found = row.getOrDefault("reduced", type);
+            }
         }
         return found;
     }
