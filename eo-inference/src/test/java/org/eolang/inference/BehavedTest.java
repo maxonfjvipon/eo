@@ -60,6 +60,28 @@ final class BehavedTest {
     }
 
     @Test
+    void refusesToLandOnANameNoSourceFileCanWrite() {
+        MatcherAssert.assertThat(
+            "a moniker is worse than the name it replaces, but the type was reduced to one",
+            new Behaved(
+                new XMLDocument(
+                    String.join(
+                        "",
+                        "<provides>",
+                        "<type id='Φ.alias'><attr name='φ' type='Φ.alias.a🌵3-2'/></type>",
+                        "<type id='Φ.alias.a🌵3-2'>",
+                        "<attr name='leaf' type='Φ.alias.a🌵3-2.leaf'/>",
+                        "</type>",
+                        "</provides>"
+                    )
+                ),
+                Collections.emptyMap()
+            ).all(),
+            Matchers.not(Matchers.hasKey("Φ.alias"))
+        );
+    }
+
+    @Test
     void countsNoVoidAmongTheAttributesThatKeepATypeApart() {
         MatcherAssert.assertThat(
             "a void is filled from outside and names nothing of its own, but it was counted",

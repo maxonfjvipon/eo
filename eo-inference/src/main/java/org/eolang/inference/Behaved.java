@@ -40,13 +40,20 @@ import java.util.Map;
  * {@code @} — would reduce almost nothing; voids are on their way to being
  * named by the parser and unreadable from outside, like a moniker and a test,
  * and the day they get there this clause is deleted and the rule reads as it
- * was written. What it costs meanwhile is small and was measured: of the 1,444
- * reads that land on a type this reduces, 25 ask for a void the new name
- * cannot answer.</p>
+ * was written. What it costs meanwhile was measured: of the 1,680 reads that
+ * land on a type this reduces, 104 ask for a void the new name has no answer
+ * for. Eighty-eight of those are inside a test and eight more ask for
+ * {@code ρ}, which leaves eight on the library proper — {@code printf} wanting
+ * its {@code args}, {@code with} its {@code key} and its {@code value}, and
+ * three besides.</p>
  *
  * <p>The walk goes on for as long as each name it arrives at is as bare as the
- * last, and gives back the final name that still has a row of its own, since a
- * void has none and is walked through rather than settled on. What an atom
+ * last, and gives back the final name that still has a row of its own and that
+ * a source file could write down, since a void has none and is walked through
+ * rather than settled on, and a name with a moniker or a test in it is walked
+ * through for the same reason it is not counted: nobody can say it. Trading
+ * {@code Φ.i64.plus} for the {@code Φ.i64.plus.a🌵143-4} its body happens to
+ * be would hand a reader a worse name than the one they came with. What an atom
  * says it comes back with counts as standing behind {@code @} — the whole of
  * {@code Φ.number.plus} is an annotation saying {@code Φ.number}, so
  * {@code 1.plus 2} is a number — which is {@link Provided}'s
@@ -113,7 +120,7 @@ final class Behaved {
                 break;
             }
             hop = behind;
-            if (rows.containsKey(hop)) {
+            if (rows.containsKey(hop) && Behaved.written(hop)) {
                 found = hop;
             }
         }
@@ -131,6 +138,11 @@ final class Behaved {
             }
         }
         return found;
+    }
+
+    private static boolean written(final String locator) {
+        return Behaved.open(locator)
+            && !locator.contains(".+") && !locator.contains(".-");
     }
 
     private static boolean open(final String name) {
