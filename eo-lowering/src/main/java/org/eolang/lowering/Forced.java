@@ -28,13 +28,10 @@ import java.util.Optional;
  * dataization, so there the term stands unsettled like a site until the
  * atom of the universe parks on it and a step takes its place.</p>
  *
+ * <p>A fragment may settle into such a view, and then {@link Rendering}
+ * hands the answer over through the raw bits of the local.</p>
+ *
  * @since 0.76.0
- * @todo #8407:30min Let a fragment answer the bytes of a number. The view
- *  of a symbol keeps the key of the symbol, so a protocol settling into
- *  it hands {@code Data.ToPhi} the Java local as it is, a double where
- *  the formation answered bytes, and {@link Reduction} refuses such an
- *  answer for now, wherever a tree settles. Render the view through the
- *  raw bits of the local instead, and let the answer carry bytes.
  */
 public final class Forced implements Term {
 
