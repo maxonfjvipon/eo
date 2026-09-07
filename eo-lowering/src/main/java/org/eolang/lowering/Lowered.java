@@ -23,8 +23,10 @@ import org.w3c.dom.Element;
  * <p>A formation qualifies when it is a named direct attribute of a
  * top-level object, its body is voids plus one {@code φ} plus helpers
  * nothing outside can name, and every void is witnessed in the tables
- * of {@code eo:inference} as a number, a string or bytes, so a symbolic
- * carrier can stand for it. A helper is an attribute the source
+ * of {@code eo:inference} as a number, a string, bytes or a bool, so a
+ * symbolic carrier can stand for it, or as a tuple, which the atom holds
+ * as the object itself and asks its length and its elements of by
+ * dispatching back into EO. A helper is an attribute the source
  * privatized with {@code >>}, or a const the parser wrapped, and it
  * shows up under a synthetic {@code a🌵} name: the body reads it in
  * place, applying it to its arguments when it is a formation of its
@@ -45,8 +47,10 @@ import org.w3c.dom.Element;
  * protocol, the protocol is rendered into a Java body, the body goes
  * into a sidecar file named by its own digest, and the formation keeps
  * only its voids, the digest, and a {@code λ} marker — the shape
- * {@code lowered.xsl} later renders into an atom class, which binds
- * {@code ρ} of its own, so a declared {@code ρ} leaves with the body.
+ * {@code lowered.xsl} later renders into an atom class, which declares
+ * no {@code ρ} at all, since the body that could have read one leaves
+ * with the digest and an atom holding a receiver it never reads is what
+ * makes its own dataization reenter itself (#8439).
  * Whatever refuses
  * along the way — an unwitnessed void, an operation outside the tables,
  * a body that needs no computation — leaves the formation as
