@@ -20,24 +20,25 @@ import java.util.stream.Collectors;
  * {@link Carrier}, an {@code as-bytes} dispatch and a {@code dataized}
  * object alike become the {@link Forced} bytes of what they are applied
  * to, since a const is the latter followed by the former and forcing is
- * already what a protocol does, and a
- * {@code ξ} reference to a declared void becomes the symbol of that
- * void, named positionally so that no spelling of a void name ever
- * leaks into a marker, and a {@code ξ.ρ} reference to the formation
- * being lowered, with arguments, becomes the {@link Again} of its own
- * body. A {@code ξ} reference to a helper the formation binds next to
- * its body becomes the helper's own body, read in place: an application
- * over the same voids stands wherever it is named, and a formation of
- * its own is applied where it is named, its voids bound to the argument
- * terms in a {@link Scope} of its own, the way phino would bind them,
- * so its body stands there with every void spelled out. A helper named
- * twice stands twice, and identical sites collapse into one step
- * anyway. A helper that reads itself, directly or through another
- * helper, is a cycle and is refused. The parser rolls a dispatch chain
- * rooted in a reference into the base itself, so {@code ξ.b.size.plus}
- * unrolls here into nested sites, with the arguments of the element
- * attached to the last link. Anything else is refused, since its
- * meaning depends on a context the reduction does not carry.</p>
+ * already what a protocol does, and a {@code ξ} reference to a declared
+ * void becomes the symbol of that void, named positionally so that no
+ * spelling of a void name ever leaks into a marker, and a {@code ξ.ρ}
+ * reference to the formation being lowered, with arguments, becomes the
+ * {@link Again} of its own body, and the terminator {@code T} becomes
+ * the {@link Fail} of the one reason it carries. A {@code ξ} reference
+ * to a helper the formation binds next to its body becomes the helper's
+ * own body, read in place: an application over the same voids stands
+ * wherever it is named, and a formation of its own is applied where it
+ * is named, its voids bound to the argument terms in a {@link Scope} of
+ * its own, the way phino would bind them, so its body stands there with
+ * every void spelled out. A helper named twice stands twice, and
+ * identical sites collapse into one step anyway. A helper that reads
+ * itself, directly or through another helper, is a cycle and is refused.
+ * The parser rolls a dispatch chain rooted in a reference into the base
+ * itself, so {@code ξ.b.size.plus} unrolls here into nested sites, with
+ * the arguments of the element attached to the last link. Anything else
+ * is refused, since its meaning depends on a context the reduction does
+ * not carry.</p>
  *
  * @since 0.76.0
  */
@@ -117,8 +118,10 @@ public final class Parsed {
     private Term parsed(final Xnav node) {
         final String base = node.attribute("base").text().orElse("");
         final Term out;
-        if ("Φ.dataized".equals(base)) {
-            out = new Forced(this.parsed(Parsed.target(node)));
+        if ("⊥".equals(base)) {
+            out = new Fail(this.parsed(Parsed.only(node, "The terminator must carry")));
+        } else if ("Φ.dataized".equals(base)) {
+            out = new Forced(this.parsed(Parsed.only(node, "The dataized object must force")));
         } else if (base.startsWith("Φ.")) {
             out = new Carrier(node).literal();
         } else if (base.startsWith("ξ.")) {
@@ -205,13 +208,11 @@ public final class Parsed {
         return out;
     }
 
-    private static Xnav target(final Xnav node) {
+    private static Xnav only(final Xnav node, final String who) {
         final List<Xnav> kids = Parsed.kids(node);
         if (kids.size() != 1) {
             throw new IllegalStateException(
-                String.format(
-                    "The dataized object must force exactly one target, not %d", kids.size()
-                )
+                String.format("%s exactly one target, not %d", who, kids.size())
             );
         }
         return kids.get(0);

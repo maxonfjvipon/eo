@@ -86,12 +86,17 @@ public final class Symbol implements Term {
     }
 
     @Override
+    public Term swapped(final Shape shape, final Term swap) {
+        return this;
+    }
+
+    @Override
     public Optional<Again> again() {
         return Optional.empty();
     }
 
     @Override
-    public Term swapped(final Shape shape, final Term swap) {
-        return this;
+    public Optional<Fail> terminator() {
+        return Optional.empty();
     }
 }

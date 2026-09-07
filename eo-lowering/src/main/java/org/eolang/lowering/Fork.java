@@ -20,9 +20,10 @@ import java.util.List;
  * stay behind the bool that protects them. The value of the fork is
  * whatever the taken arm answers, so the two arms must answer the same
  * forma, and a fork whose arms disagree refuses to name one. An arm may
- * also resume a body instead of answering, and then the fork answers
- * what the other arm does; a fork resuming in both arms has no value
- * and names no forma, since nothing after it ever runs.</p>
+ * also resume a body, or fail, instead of answering, and then the fork
+ * answers what the other arm does; a fork resuming or failing in both
+ * arms has no value and names no forma, since nothing after it ever
+ * runs.</p>
  *
  * @since 0.76.0
  */

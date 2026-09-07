@@ -89,6 +89,36 @@ final class ReadsTest {
         );
     }
 
+    @Test
+    void countsReasonOfFailure() {
+        MatcherAssert.assertThat(
+            "the void a failure names as its reason must count as read, but it doesnt",
+            new Reads(new Protocol(Collections.emptyList(), "sym:v2")).all(),
+            Matchers.contains(2)
+        );
+    }
+
+    @Test
+    void leavesReasonOfOneArmToThatArm() {
+        MatcherAssert.assertThat(
+            "a void only the failing arm reads must be declared in that arm alone, but it isnt",
+            new Reads(
+                new Protocol(
+                    Collections.singletonList(
+                        new Fork(
+                            "s1", "L_bool_if", "sym:v0",
+                            new Protocol(Collections.emptyList(), "number:11-", "number"),
+                            new Protocol(Collections.emptyList(), "sym:v1")
+                        )
+                    ),
+                    "sym:s1",
+                    "number"
+                )
+            ).own(Collections.emptySet()),
+            Matchers.contains(0)
+        );
+    }
+
     private static Protocol forked(final String yes, final String not) {
         return new Protocol(
             Collections.singletonList(

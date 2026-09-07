@@ -441,6 +441,120 @@ final class JavaAtomTest {
     }
 
     @Test
+    void rendersFailingArmAsThrow() {
+        MatcherAssert.assertThat(
+            "an arm that fails must throw with its reason and assign nothing, but it doesnt",
+            new JavaAtom(
+                JavaAtomTest.guarded(
+                    new Protocol(Collections.emptyList(), "string:6F-70-73")
+                ),
+                Collections.singletonMap("x", "number")
+            ).text(),
+            Matchers.equalTo(
+                String.join(
+                    System.lineSeparator(),
+                    "        final double v0 = new Dataized(this.take(\"x\")).asNumber();",
+                    "        final boolean s1 = v0 > Double.longBitsToDouble(0x0000000000000000L);",
+                    "        final double s2;",
+                    "        if (s1) {",
+                    "            s2 = v0;",
+                    "        } else {",
+                    String.format(
+                        "            throw new ExFailure(\"%%s\", new String(%s, %s));",
+                        "new byte[] {(byte) 0x6F, (byte) 0x70, (byte) 0x73}",
+                        "java.nio.charset.StandardCharsets.UTF_8"
+                    ),
+                    "        }",
+                    "        return new Data.ToPhi(s2);"
+                )
+            )
+        );
+    }
+
+    @Test
+    void readsReasonInsideTheFailingArm() {
+        final Map<String, String> voids = new LinkedHashMap<>();
+        voids.put("x", "number");
+        voids.put("t", "string");
+        MatcherAssert.assertThat(
+            "a void only the reason names must be read inside the failing arm, but it isnt",
+            new JavaAtom(
+                JavaAtomTest.guarded(new Protocol(Collections.emptyList(), "sym:v1")),
+                voids
+            ).text(),
+            Matchers.stringContainsInOrder(
+                "} else {",
+                "final byte[] v1 = new Dataized(this.take(\"t\")).take();",
+                "throw new ExFailure(\"%s\", new String(v1, java.nio.charset.StandardCharsets.UTF_8));",
+                "}"
+            )
+        );
+    }
+
+    @Test
+    void refusesNumberAsReason() {
+        Assertions.assertThrows(
+            IllegalStateException.class,
+            new JavaAtom(
+                JavaAtomTest.guarded(
+                    new Protocol(Collections.emptyList(), "number:3F-F0-00-00-00-00-00-00")
+                ),
+                Collections.singletonMap("x", "number")
+            )::text,
+            "a number is no message to fail with, but it rendered"
+        );
+    }
+
+    @Test
+    void rendersFailingBodyAsThrow() {
+        MatcherAssert.assertThat(
+            "a body that fails must throw inside its branch of the state machine, but it doesnt",
+            new JavaAtom(
+                new Program(
+                    Arrays.asList(
+                        new Body(
+                            "", 0, Collections.singletonList("number"),
+                            new Protocol(
+                                Arrays.asList(
+                                    new Application(
+                                        "s1", "L_bytes_eq",
+                                        Arrays.asList("sym:v0", "number:00-00-00-00-00-00-00-00")
+                                    ),
+                                    new Fork(
+                                        "s2", "L_bool_if", "sym:s1",
+                                        new Protocol(
+                                            Collections.emptyList(), "a🌵3-4",
+                                            Collections.singletonList("sym:v0")
+                                        ),
+                                        new Protocol(Collections.emptyList(), "sym:v0", "number")
+                                    )
+                                ),
+                                "sym:s2", "number"
+                            )
+                        ),
+                        new Body(
+                            "a🌵3-4", 1, Collections.singletonList("number"),
+                            new Protocol(Collections.emptyList(), "string:6F-70-73")
+                        )
+                    ),
+                    Collections.singletonMap("n", "number")
+                )
+            ).text(),
+            Matchers.stringContainsInOrder(
+                "out = s2;",
+                "break;",
+                "} else {",
+                String.format(
+                    "throw new ExFailure(\"%%s\", new String(%s, %s));",
+                    "new byte[] {(byte) 0x6F, (byte) 0x70, (byte) 0x73}",
+                    "java.nio.charset.StandardCharsets.UTF_8"
+                ),
+                "return new Data.ToPhi(out);"
+            )
+        );
+    }
+
+    @Test
     void readsVoidInsideTheArmThatAloneUsesIt() {
         final Map<String, String> voids = new LinkedHashMap<>();
         voids.put("f", "bool");
@@ -735,6 +849,24 @@ final class JavaAtomTest {
                 Collections.singletonMap("t", "string")
             )::text,
             "a byte array handed over as a string would change the forma, but it was"
+        );
+    }
+
+    private static Protocol guarded(final Protocol otherwise) {
+        return new Protocol(
+            Arrays.asList(
+                new Application(
+                    "s1", "L_number_gt",
+                    Arrays.asList("sym:v0", "number:00-00-00-00-00-00-00-00")
+                ),
+                new Fork(
+                    "s2", "L_bool_if", "sym:s1",
+                    new Protocol(Collections.emptyList(), "sym:v0", "number"),
+                    otherwise
+                )
+            ),
+            "sym:s2",
+            "number"
         );
     }
 

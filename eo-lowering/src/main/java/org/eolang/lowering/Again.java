@@ -115,6 +115,11 @@ public final class Again implements Term {
     }
 
     @Override
+    public Optional<Fail> terminator() {
+        return Optional.empty();
+    }
+
+    @Override
     public Term swapped(final Shape shape, final Term swap) {
         return new Again(
             this.target,

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * body the state names. A formation that never resumes anything is a
  * program of one body, the plain case. The program answers one forma,
  * whatever body the answer comes from, and a program whose bodies only
- * resume one another answers nothing and is refused.</p>
+ * resume one another, or fail, answers nothing and is refused.</p>
  *
  * @since 0.76.0
  */
@@ -122,7 +122,7 @@ public final class Program {
             .collect(Collectors.toList());
         if (formas.isEmpty()) {
             throw new IllegalStateException(
-                "The program never answers, since every body of it resumes another"
+                "The program never answers, since every body of it resumes another or fails"
             );
         }
         if (formas.size() > 1) {
