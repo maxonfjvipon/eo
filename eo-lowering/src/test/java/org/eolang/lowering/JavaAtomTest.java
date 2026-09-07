@@ -26,6 +26,46 @@ import org.junit.jupiter.api.Test;
 final class JavaAtomTest {
 
     @Test
+    void holdsTupleAndReadsItsLength() {
+        MatcherAssert.assertThat(
+            "a tuple void must be held as a Phi and its length dataized, but it isnt",
+            new JavaAtom(
+                new Protocol(
+                    Arrays.asList(
+                        new Application(
+                            "s1", "L_tuple_length", Collections.singletonList("sym:v0")
+                        ),
+                        new Application(
+                            "s2", "L_number_plus",
+                            Arrays.asList("sym:s1", "number:3F-F0-00-00-00-00-00-00")
+                        )
+                    ),
+                    "sym:s2", "number"
+                ),
+                Collections.singletonMap("items", "tuple")
+            ).text(),
+            Matchers.stringContainsInOrder(
+                "final Phi v0 = this.take(\"items\");",
+                "final double s1 = new Dataized(v0.take(\"length\")).asNumber();",
+                "final double s2 = s1 + Double.longBitsToDouble(0x3FF0000000000000L);",
+                "return new Data.ToPhi(s2);"
+            )
+        );
+    }
+
+    @Test
+    void refusesTupleAnswer() {
+        Assertions.assertThrows(
+            IllegalStateException.class,
+            new JavaAtom(
+                new Protocol(Collections.emptyList(), "sym:v0", "tuple"),
+                Collections.singletonMap("items", "tuple")
+            )::text,
+            "a tuple cannot be handed to Data.ToPhi, but it was rendered"
+        );
+    }
+
+    @Test
     void rendersBodiesAsStateMachine() {
         MatcherAssert.assertThat(
             "bodies resuming one another must run as one loop over a state, but they dont",
@@ -44,7 +84,7 @@ final class JavaAtomTest {
                             new Protocol(
                                 Arrays.asList(
                                     new Application(
-                                        "s1", "L_bytes_eq",
+                                        "s1", "L_number_eq",
                                         Arrays.asList("sym:v1", "number:00-00-00-00-00-00-00-00")
                                     ),
                                     new Fork(
@@ -257,30 +297,24 @@ final class JavaAtomTest {
     }
 
     @Test
-    void rendersNumberEqualityAsBitComparison() {
+    void rendersNumberEqualityAsValueComparison() {
         final Map<String, String> voids = new LinkedHashMap<>();
         voids.put("x", "number");
         voids.put("y", "number");
         MatcherAssert.assertThat(
-            "equality over numbers must compare their raw bits, but it doesnt",
+            "equality over numbers must compare their values, but it doesnt",
             new JavaAtom(
                 new Protocol(
                     Arrays.asList(
                         new Application("s1", "L_number_div", Arrays.asList("sym:v0", "sym:v1")),
-                        new Application("s2", "L_bytes_eq", Arrays.asList("sym:s1", "sym:v0"))
+                        new Application("s2", "L_number_eq", Arrays.asList("sym:s1", "sym:v0"))
                     ),
                     "sym:s2",
                     "bool"
                 ),
                 voids
             ).text(),
-            Matchers.containsString(
-                String.format(
-                    "final boolean s2 = %s == %s;",
-                    "Double.doubleToRawLongBits(s1)",
-                    "Double.doubleToRawLongBits(v0)"
-                )
-            )
+            Matchers.containsString("final boolean s2 = s1 == v0;")
         );
     }
 
@@ -526,9 +560,8 @@ final class JavaAtomTest {
                     "        final double s2;",
                     "        while (true) {",
                     String.format(
-                        "            final boolean s1 = %s == %s;",
-                        "Double.doubleToRawLongBits(v0)",
-                        "Double.doubleToRawLongBits(Double.longBitsToDouble(0x0000000000000000L))"
+                        "            final boolean s1 = v0 == %s;",
+                        "Double.longBitsToDouble(0x0000000000000000L)"
                     ),
                     "            if (s1) {",
                     "                s2 = v1;",
@@ -709,7 +742,7 @@ final class JavaAtomTest {
         return new Protocol(
             Arrays.asList(
                 new Application(
-                    "s1", "L_bytes_eq", Arrays.asList("sym:v0", "number:00-00-00-00-00-00-00-00")
+                    "s1", "L_number_eq", Arrays.asList("sym:v0", "number:00-00-00-00-00-00-00-00")
                 ),
                 new Fork(
                     "s2", "L_bool_if", "sym:s1",

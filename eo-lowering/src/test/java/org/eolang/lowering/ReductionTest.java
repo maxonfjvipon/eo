@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -186,6 +187,55 @@ final class ReductionTest {
                 8
             ).protocol().carrier(),
             Matchers.equalTo("bytes")
+        );
+    }
+
+    @Test
+    void readsLengthOfTuple(@Mktmp final Path temp) throws Exception {
+        final Phino phino = new Phino("phino", 1000, temp);
+        Assumptions.assumeTrue(phino.suitable());
+        MatcherAssert.assertThat(
+            "the length of a symbolic tuple must become a step, but it doesnt",
+            new Reduction(
+                phino,
+                new Xnav(
+                    String.join(
+                        "",
+                        "<o base='ξ.items.length.plus'>",
+                        ReductionTest.number("α0", "3F-F0-00-00-00-00-00-00"),
+                        "</o>"
+                    )
+                ).element("o"),
+                Collections.singletonMap("items", "tuple"),
+                8
+            ).protocol().moves().get(0).atom(),
+            Matchers.equalTo("L_tuple_length")
+        );
+    }
+
+    @Test
+    void dataizesElementOfTuple(@Mktmp final Path temp) throws Exception {
+        final Phino phino = new Phino("phino", 1000, temp);
+        Assumptions.assumeTrue(phino.suitable());
+        MatcherAssert.assertThat(
+            "an element of a tuple must be taken and dataized in two steps, but it isnt",
+            new Reduction(
+                phino,
+                new Xnav(
+                    String.join(
+                        "",
+                        "<o base='.eq'>",
+                        "<o base='.as-bytes'><o base='ξ.items.at'>",
+                        ReductionTest.number("α0", "3F-F0-00-00-00-00-00-00"),
+                        "</o></o>",
+                        "<o as='α0' base='Φ.bytes'><o as='α0'>01-02</o></o>",
+                        "</o>"
+                    )
+                ).element("o"),
+                Collections.singletonMap("items", "tuple"),
+                8
+            ).protocol().moves().stream().map(Step::atom).collect(Collectors.toList()),
+            Matchers.contains("L_tuple_at", "L_object_as_bytes", "L_bytes_eq")
         );
     }
 
