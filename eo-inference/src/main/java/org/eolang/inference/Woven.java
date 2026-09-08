@@ -51,6 +51,7 @@ final class Woven {
 
     /**
      * Ctor.
+     *
      * @param provides The provides table, as {@link Provides} wrote it
      * @param applications What every application of the program gives
      * @param taken What every dispatch takes its attribute from
@@ -70,6 +71,7 @@ final class Woven {
 
     /**
      * These pairs as the rows of the links table.
+     *
      * @param pairs The pairs, each object against the one it is a copy of
      * @return The types, by the locator of the object they are about, in the
      *  order the pairs came in

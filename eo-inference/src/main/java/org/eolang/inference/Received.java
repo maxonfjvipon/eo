@@ -50,6 +50,7 @@ final class Received {
 
     /**
      * Ctor.
+     *
      * @param formations The formations of the program
      */
     Received(final Collection<XML> formations) {
@@ -58,6 +59,7 @@ final class Received {
 
     /**
      * Write what every declared receiver holds into the given table.
+     *
      * @param rows The table to fill
      */
     void fill(final Tojos rows) {

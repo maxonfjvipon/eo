@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Test case for {@link Behaved}.
+ *
  * @since 0.70.0
  */
 final class BehavedTest {

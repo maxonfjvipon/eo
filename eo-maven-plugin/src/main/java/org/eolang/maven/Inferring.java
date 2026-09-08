@@ -79,6 +79,7 @@ final class Inferring implements Step {
 
     /**
      * Ctor.
+     *
      * @param parsed The directory with XMIR files, as the parser leaves them
      *  after its canonical pipeline (see {@code org.eolang.parser.Canonical})
      * @param pre The directory for the prepared XMIR files
