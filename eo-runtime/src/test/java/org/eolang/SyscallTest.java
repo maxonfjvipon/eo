@@ -790,8 +790,12 @@ final class SyscallTest {
         /**
          * Start server on the given port.
          *
+         * <p>The socket is kept in a field and closed by {@link #stop()},
+         * so it cannot be wrapped into try-with-resources here.</p>
+         *
          * @return Self
          */
+        @SuppressWarnings("PMD.CloseInlineResourceRule")
         RandomServer started() throws IOException {
             this.socket = new ServerSocket();
             this.socket.setReuseAddress(true);
