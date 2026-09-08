@@ -274,6 +274,30 @@ final class FormasTest {
     }
 
     @Test
+    void witnessesVoidFilledByBodyOfFormation(@Mktmp final Path temp) throws IOException {
+        Files.write(
+            temp.resolve("provides.xml"),
+            String.format(
+                "<provides><type id=\"Φ.tuple.at\">%s</type></provides>",
+                "<attr name=\"fallback\" void=\"true\"><witnessed><ref loc=\"Φ.foo.msg\"/></witnessed></attr>"
+            ).getBytes(StandardCharsets.UTF_8)
+        );
+        Files.write(
+            temp.resolve("links.xml"),
+            String.join(
+                "",
+                "<links><type id=\"Φ.foo.msg\"><ref loc=\"Φ.foo.text\"/></type>",
+                "<type id=\"Φ.foo.text.φ\"><ref loc=\"Φ.string\"/></type></links>"
+            ).getBytes(StandardCharsets.UTF_8)
+        );
+        MatcherAssert.assertThat(
+            "a void filled by a formation must be witnessed as what its body answers, but it isnt",
+            new Formas(temp).given("Φ.tuple.at.fallback"),
+            Matchers.equalTo("string")
+        );
+    }
+
+    @Test
     void refusesVoidWitnessedWithMixedFormas(@Mktmp final Path temp) throws IOException {
         Files.write(
             temp.resolve("provides.xml"),
