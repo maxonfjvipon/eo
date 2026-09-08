@@ -112,64 +112,76 @@ final class MjFormatTest {
 
     @Test
     void failsWhenSourceDoesNotParse(@Mktmp final Path temp) {
-        final IllegalStateException exception = Assertions.assertThrows(
-            IllegalStateException.class,
-            () -> new FakeMaven(temp)
-                .withProgram(MjFormatTest.unparsable())
-                .execute(MjFormat.class),
-            "a source that fails to parse must not be silently formatted"
-        );
         MatcherAssert.assertThat(
             "the failure must explain that the source does not fully parse",
-            new UncheckedText(new TextOf(exception)).asString(),
+            new UncheckedText(
+                new TextOf(
+                    Assertions.assertThrows(
+                        IllegalStateException.class,
+                        () -> new FakeMaven(temp)
+                            .withProgram(MjFormatTest.unparsable())
+                            .execute(MjFormat.class),
+                        "a source that fails to parse must not be silently formatted"
+                    )
+                )
+            ).asString(),
             Matchers.containsString("does not fully parse")
         );
     }
 
     @Test
     void failsWhenErrorRecoveredWithPlaceholder(@Mktmp final Path temp) {
-        final IllegalStateException exception = Assertions.assertThrows(
-            IllegalStateException.class,
-            () -> new FakeMaven(temp)
-                .withProgram(MjFormatTest.placeholder())
-                .execute(MjFormat.class),
-            "a source recovered with a placeholder node must not be silently formatted"
-        );
         MatcherAssert.assertThat(
             "the failure must explain that the source does not fully parse",
-            new UncheckedText(new TextOf(exception)).asString(),
+            new UncheckedText(
+                new TextOf(
+                    Assertions.assertThrows(
+                        IllegalStateException.class,
+                        () -> new FakeMaven(temp)
+                            .withProgram(MjFormatTest.placeholder())
+                            .execute(MjFormat.class),
+                        "a source recovered with a placeholder node must not be silently formatted"
+                    )
+                )
+            ).asString(),
             Matchers.containsString("does not fully parse")
         );
     }
 
     @Test
     void failsWhenErrorRecoveredByDroppingABinding(@Mktmp final Path temp) {
-        final IllegalStateException exception = Assertions.assertThrows(
-            IllegalStateException.class,
-            () -> new FakeMaven(temp)
-                .withProgram(MjFormatTest.droppedBinding())
-                .execute(MjFormat.class),
-            "a source recovered by dropping a whole binding must not be silently formatted"
-        );
         MatcherAssert.assertThat(
             "the failure must explain that the source does not fully parse",
-            new UncheckedText(new TextOf(exception)).asString(),
+            new UncheckedText(
+                new TextOf(
+                    Assertions.assertThrows(
+                        IllegalStateException.class,
+                        () -> new FakeMaven(temp)
+                            .withProgram(MjFormatTest.droppedBinding())
+                            .execute(MjFormat.class),
+                        "a source recovered by dropping a whole binding must not be silently formatted"
+                    )
+                )
+            ).asString(),
             Matchers.containsString("does not fully parse")
         );
     }
 
     @Test
     void failsWhenNameOnlyLivesInAnEnclosingScope(@Mktmp final Path temp) {
-        final IllegalStateException exception = Assertions.assertThrows(
-            IllegalStateException.class,
-            () -> new FakeMaven(temp)
-                .withProgram(MjFormatTest.enclosing())
-                .execute(MjFormat.class),
-            "a name reachable only through the parent must not be silently formatted"
-        );
         MatcherAssert.assertThat(
             "the failure must explain that the source does not fully parse",
-            new UncheckedText(new TextOf(exception)).asString(),
+            new UncheckedText(
+                new TextOf(
+                    Assertions.assertThrows(
+                        IllegalStateException.class,
+                        () -> new FakeMaven(temp)
+                            .withProgram(MjFormatTest.enclosing())
+                            .execute(MjFormat.class),
+                        "a name reachable only through the parent must not be silently formatted"
+                    )
+                )
+            ).asString(),
             Matchers.containsString("does not fully parse")
         );
     }

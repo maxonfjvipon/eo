@@ -441,33 +441,39 @@ final class MjTranspileTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "org.example.Ph Inspected", "42Nope"})
     void rejectsPhiDefaultClassThatIsNotAJavaName(final String name, @Mktmp final Path temp) {
-        final IllegalStateException exception = Assertions.assertThrows(
-            IllegalStateException.class,
-            () -> new FakeMaven(temp)
-                .withProgram(MjTranspileTest.program())
-                .with("superclass", name)
-                .execute(new PpTranspile()),
-            "a phiDefaultClass that is not a Java class name must not reach the generated Java"
-        );
         MatcherAssert.assertThat(
             "a phiDefaultClass that is not a Java class name must be refused by naming the option, instead of emitting an extends clause that cannot compile",
-            new UncheckedText(new TextOf(exception)).asString(),
+            new UncheckedText(
+                new TextOf(
+                    Assertions.assertThrows(
+                        IllegalStateException.class,
+                        () -> new FakeMaven(temp)
+                            .withProgram(MjTranspileTest.program())
+                            .with("superclass", name)
+                            .execute(new PpTranspile()),
+                        "a phiDefaultClass that is not a Java class name must not reach the generated Java"
+                    )
+                )
+            ).asString(),
             Matchers.containsString("eo.phiDefaultClass")
         );
     }
 
     @Test
     void throwsDetailedError(@Mktmp final Path temp) {
-        final IllegalStateException exception = Assertions.assertThrows(
-            IllegalStateException.class,
-            () -> new FakeMaven(temp)
-                .withProgram("# Absent.")
-                .execute(new PpTranspile()),
-            "TranspileMojo should throw an exception on invalid EO code"
-        );
         MatcherAssert.assertThat(
             "TranspileMojo should throw an exception with detailed message on invalid EO code",
-            new UncheckedText(new TextOf(exception)).asString(),
+            new UncheckedText(
+                new TextOf(
+                    Assertions.assertThrows(
+                        IllegalStateException.class,
+                        () -> new FakeMaven(temp)
+                            .withProgram("# Absent.")
+                            .execute(new PpTranspile()),
+                        "TranspileMojo should throw an exception on invalid EO code"
+                    )
+                )
+            ).asString(),
             Matchers.allOf(
                 Matchers.containsString("Expected 1 child nodes, but found 0"),
                 Matchers.containsString("main.xmir' encountered some problems, broken syntax?")
