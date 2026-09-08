@@ -11,8 +11,9 @@ import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.ptr.IntByReference;
+import java.util.Arrays;
 import java.util.Collections;
-import org.eolang.SockaddrIn;
+import java.util.List;
 
 /**
  * C standard library with unix syscalls.
@@ -24,6 +25,16 @@ public interface CStdLib extends Library {
      * C STDLIB instance.
      */
     CStdLib INSTANCE = CStdLib.load();
+
+    /**
+     * The names macOS keeps for the calls that see a 64-bit inode.
+     *
+     * <p>On the Intel build of macOS the plain symbols are the ones from
+     * before 64-bit inodes, and the current calls carry the {@code $INODE64}
+     * suffix. The Apple silicon build has never had the old ones, so the
+     * suffix is only ever added there where it exists.</p>
+     */
+    List<String> INODE64 = Arrays.asList("stat", "lstat", "opendir", "readdir");
 
     /**
      * Standard input file descriptor.
@@ -222,7 +233,7 @@ public interface CStdLib extends Library {
      * @param addrlen The size of the address structure
      * @return Zero on success, -1 on error
      */
-    int connect(int sockfd, SockaddrIn addr, int addrlen);
+    int connect(int sockfd, Structure addr, int addrlen);
 
     /**
      * Assigns the address specified by {@code addr} to the socket referred to
@@ -232,7 +243,7 @@ public interface CStdLib extends Library {
      * @param addrlen The size of the address structure
      * @return Zero on success, -1 on error
      */
-    int bind(int sockfd, SockaddrIn addr, int addrlen);
+    int bind(int sockfd, Structure addr, int addrlen);
 
     /**
      * Listen for incoming connections on socket.
@@ -251,7 +262,7 @@ public interface CStdLib extends Library {
      * @return On success, file descriptor for the accepted socket
      *  (a nonnegative integer) is returned. On error, -1 is returned
      */
-    int accept(int sockfd, SockaddrIn addr, IntByReference addrlen);
+    int accept(int sockfd, Structure addr, IntByReference addrlen);
 
     /**
      * Receive a message from a socket.
@@ -282,6 +293,32 @@ public interface CStdLib extends Library {
     int inet_addr(String address);
 
     /**
+     * Open a directory for reading.
+     * @param path Path to the directory
+     * @return Pointer to the directory stream, or NULL on error
+     */
+    Pointer opendir(String path);
+
+    /**
+     * Read the next entry of a directory stream.
+     *
+     * <p>The pointer leads to a {@code struct dirent} owned by libc, valid
+     * until the next call on the same stream, so whatever is read out of it
+     * has to be read at once.</p>
+     *
+     * @param dirp The directory stream
+     * @return Pointer to the entry, or NULL when the stream is over
+     */
+    Pointer readdir(Pointer dirp);
+
+    /**
+     * Close a directory stream.
+     * @param dirp The directory stream
+     * @return Zero on success, -1 on error
+     */
+    int closedir(Pointer dirp);
+
+    /**
      * Converts {@code errno} to a human-readable string.
      * @param errno The error number
      * @return Error as string
@@ -299,7 +336,7 @@ public interface CStdLib extends Library {
                     (FunctionMapper) (lib, method) -> {
                         final String name = method.getName();
                         final String mapped;
-                        if ("stat".equals(name) || "lstat".equals(name)) {
+                        if (CStdLib.INODE64.contains(name)) {
                             mapped = String.format("%s$INODE64", name);
                         } else {
                             mapped = name;

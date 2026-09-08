@@ -33,11 +33,18 @@
 # rather than in reading order, because the linter sorts them by name.
 #
 # The `%s` conversion refuses an argument whose bytes do not decode as UTF-8.
-# `false` and `true` dataize to the single bytes `00-` and `01-`, which are
-# also the valid one-character encodings of U+0000 and U+0001, so an object
-# knows its own bytes here and not its type: a boolean routed through `%s`
-# is printed as that control character instead of being rejected, and `%b`
-# remains the conversion to reach for a boolean.
+# `false` dataizes to the single byte `00-`, which is also the valid
+# one-character encoding of U+0000, so an object knows its own bytes here
+# and not its type: FALSE routed through `%s` is printed as that control
+# character instead of being rejected. TRUE dataizes to `FF-`, which no
+# text encodes, so it is rejected. `%b` remains the conversion to reach
+# for a boolean either way.
+#
+# The `%b` conversion refuses an argument whose bytes are neither `00-` nor
+# `FF-`, so a text or a number reaching it terminates instead of being
+# printed as `false`. The coin lands the other way up as well: the
+# one-character text of U+0000 is accepted as a boolean, since its byte is
+# the byte of `false`.
 #
 # The `%d` guard names the number it rejects through `as-scientific` and not
 # through `%f`, because every magnitude it rejects is past the range `as-fixed`
@@ -222,12 +229,19 @@
             capped (bytes datum).as-hex
             if.
               62-.eq conv
-              capped
-                arg.as-bool.if "true" "false"
+              if.
+                or.
+                  FF-.eq datum
+                  00-.eq datum
+                capped
+                  arg.as-bool.if "true" "false"
+                T
+                  "The argument %x is not a boolean, the %%b conversion takes true or false".printf
+                    * datum
               T
-                "The conversion %x in the format is unsupported, only %%s, %%d, %%f, %%x and %%b are".printf
+                "The conversion %s in the format is unsupported, only %%s, %%d, %%f, %%x and %%b are".printf
                   *
-                    bytes conv
+                    string conv
     arg.as-bytes > datum!
     flags-end > digits!
       number flags
@@ -366,9 +380,9 @@
                     64-.eq conv
                     66-.eq conv
               T
-                "The zero flag can't be applied to the %x conversion, only to %%d and %%f".printf
+                "The zero flag can't be applied to the %s conversion, only to %%d and %%f".printf
                   *
-                    bytes conv
+                    string conv
               converted
     digits-value > width!
       number digits
@@ -377,6 +391,12 @@
     flagged > zero!
       number flags
       30-
+
+  eq. ++> can-answer-the-length-of-the-formatted-text
+    2
+    length.
+      "%s".printf
+        * "ab"
 
   eq. ++> can-answer-the-size-of-the-formatted-text
     size.
@@ -408,11 +428,6 @@
     "  40-45-00-00-00-00-00-00"
     "%25x".printf
       * 42.as-bytes
-
-  eq. ++> can-format-a-boolean-as-a-control-character
-    "\u0001"
-    "%s".printf
-      * true
 
   eq. ++> can-format-a-computed-string
     "abcd"
@@ -498,6 +513,14 @@
     "%s %s %2$s is after %1$s".printf
       * "first" "second"
 
+  eq. ++> can-format-the-length-of-another-formatted-text
+    "2"
+    "%d".printf
+      *
+        length.
+          "%s".printf
+            * "ab"
+
   eq. ++> can-ignore-extra-arguments
     "Hey"
     "%s".printf
@@ -566,6 +589,20 @@
         * nan
       "stopped"
 
+  eq. ++> can-stop-formatting-a-number-as-a-boolean
+    "stopped"
+    recovered
+      "%b".printf
+        * 0
+      "stopped"
+
+  eq. ++> can-stop-formatting-a-string-as-a-boolean
+    "stopped"
+    recovered
+      "%b".printf
+        * "x"
+      "stopped"
+
   eq. ++> can-truncate-a-negative-float-toward-zero
     "-7"
     "%d".printf
@@ -585,6 +622,10 @@
     "-9223372036854775808"
     "%d".printf
       * -9.223372036854776e18
+
+  printf. --> stops-on-a-boolean-as-a-string
+    "%s"
+    * true
 
   printf. --> stops-on-a-comma-flag-with-s
     "%,s"

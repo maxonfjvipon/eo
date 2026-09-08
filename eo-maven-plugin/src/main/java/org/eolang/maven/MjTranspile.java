@@ -7,6 +7,7 @@ package org.eolang.maven;
 import com.jcabi.log.Logger;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -30,6 +31,18 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  * {@link MjAssemble}, {@link MjParse} or {@link MjPull} goals.
  * The resulting Java files are stored in the {@link Transpiling#DIR} directory.
  * The intermediate optimized XMIRs are stored in the {@link Transpiling#PRE} directory.</p>
+ *
+ * <p>Before anything is written, the members of every package this build
+ * compiles an object for are put inside that object, the way {@link MjMerge}
+ * does it. The two are the same step and running both changes nothing, since
+ * {@link Merging} leaves a merged member alone; it is done here as well
+ * because the shape of an object decides the name of the Java class of every
+ * atom it holds, and a build that skipped the goal would name classes that
+ * the library it compiles against does not carry. {@code Φ.string.regex} is
+ * such an object: its atoms ship as {@code EOstring$EOregex$EOpattern$EOchecked} and
+ * friends, which is where they land once {@code regex} is an attribute of
+ * {@code string}, and nowhere near the {@code org.eolang.EO_string} package
+ * an unmerged {@code +package string} would compile it into (#8295).</p>
  *
  * @since 0.1
  */
@@ -149,40 +162,33 @@ public final class MjTranspile extends MjSafe {
     private File tables;
 
     /**
-     * Cache guard, see {@link ConcurrentCache} for why it is one per instance.
-     */
-    private final ConcurrentCache guard;
-
-    /**
      * Ctor.
      */
     public MjTranspile() {
-        this.guard = new ConcurrentCache();
+        // nothing
     }
 
     @Override
     public void exec() throws IOException {
         try (TjsForeign tojos = this.tojos()) {
             new Timed(
+                new Merging(tojos, this.targetDir.toPath().resolve(Merging.DIR))
+            ).exec();
+            new Timed(
                 new Transpiling(
                     tojos.standalone(),
                     this.targetDir.toPath(),
-                    this.generatedDir.toPath(),
-                    this.cache.toPath(),
-                    this.cacheEnabled,
-                    this.plugin.getVersion(),
-                    this.tests,
-                    this.roots(),
+                    new Written(this.generatedDir.toPath(), this.tests, this.roots()),
                     new Transpilation(
-                        this.plugin.getVersion(),
                         new Tracking(this.trackSteps, this.located),
                         this.coverage,
                         this.base(),
                         this.xslMeasures.toPath(),
                         this.targetDir.toPath(),
-                        this.tables.toPath()
+                        this.tables.toPath(),
+                        this.lowered()
                     ),
-                    this.guard
+                    this.stored()
                 )
             ).exec();
         }
@@ -213,6 +219,21 @@ public final class MjTranspile extends MjSafe {
             .collect(Collectors.toList());
     }
 
+    // What MjLower left in its marker file, or the empty string when it
+    // skipped or was disabled: whether the XMIR of this build was folded
+    // through phino changes the generated Java, so it belongs in the
+    // cache key that Transpilation.version() makes.
+    private String lowered() throws IOException {
+        final Path marker = this.targetDir.toPath()
+            .resolve(Lowering.DIR)
+            .resolve(Lowering.MARKER);
+        String content = "";
+        if (Files.exists(marker)) {
+            content = Files.readString(marker).trim();
+        }
+        return content;
+    }
+
     private String base() {
         if (!MjTranspile.CLASS.matcher(this.superclass).matches()) {
             throw new IllegalArgumentException(
@@ -224,5 +245,21 @@ public final class MjTranspile extends MjSafe {
             );
         }
         return this.superclass;
+    }
+
+    // The cache is skipped when the XMIR of every step is asked for: those
+    // dumps are made by the train, and a cache hit hands back a stored
+    // answer without running it (#7724). The version segment is not folded
+    // in here, because it differs from one source to the next: the rows of
+    // the inference tables an object is named in go into it (#7945), so
+    // `Transpiling` folds it in per file.
+    private GlobalCache stored() {
+        final GlobalCache store;
+        if (this.trackSteps) {
+            store = new GlobalCache.GcFresh();
+        } else {
+            store = this.caching(Transpiling.CACHE);
+        }
+        return store;
     }
 }

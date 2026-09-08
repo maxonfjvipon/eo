@@ -106,12 +106,13 @@ The pages of eo-runtime are published at
 [www.eolang.org/inference](https://www.eolang.org/inference/), rebuilt on every
 tag, so looking at them needs nothing installed.
 
-Building them is off by default, since the tables are what the compiler needs
-and the pages are for a person. The goal runs in whichever module uses the
-plugin, so this is the shortest way to the pages of a working copy:
+Drawing them is a goal of its own, `inference-report`, since the tables are
+what the compiler needs and the pages are for a person: a build that wants
+them asks for the goal, one that does not never runs it. The pom of eo-runtime
+asks for it, so this is the shortest way to the pages of a working copy:
 
 ```bash
-mvn -pl eo-runtime process-sources -Deo.inferenceReport
+mvn -pl eo-runtime process-sources
 open eo-runtime/target/site/inference/index.html
 ```
 
@@ -119,11 +120,6 @@ They land in the `target/site/inference/` of the module they describe, beside
 the coverage report and every other generated page a person opens. They are
 not written into `target/eo/`, which is the compiler's scratch space, however
 much the tables they are made from live there.
-
-A property and not a profile, though coverage next door is turned on with
-`-Pjacoco`. A profile is what you need to add an execution to a build, and
-there is nothing to add here: the goal already runs, and one flag decides
-whether it writes.
 
 ## How it works
 
@@ -153,7 +149,7 @@ more question:
 | Pass | Answers |
 | --- | --- |
 | `Resolved` | What every dispatch turns out to be. `a.b.c` is walked one hop at a time, each hop asked of the type the last one arrived at, looking behind a delegation and into a package where it has to. |
-| `Demanded` | What a void will have to offer, gathered from everything ever asked of it. A contract: a caller that fills it owes these attributes. |
+| `Demanded` | What a void will have to offer, gathered from every name ever asked of it, and what it will have to take, gathered from every call ever made on it. A contract: a caller that fills it owes these attributes, and the voids of what it fills with have to take these arguments. |
 | `Witnessed` | What the program is actually seen to put into a void. Evidence, never a contract — the callers a program happens to have today do not oblige the one written tomorrow, and a void filled with a `Φ.number` everywhere is still a void. Nothing may work out a type from it. |
 
 `Depth` then walks the finished tables and puts every object on its rung.
