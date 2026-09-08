@@ -21,6 +21,12 @@
 # rounds to the nearest even double, the same way a JVM `long` becomes a
 # `double`; a negative value is read as the negated complement of its
 # halves, so that no carry has to be propagated through the bytes.
+#
+# `plus` reads both operands through the same pattern as two thirty-two
+# bit halves, adds the halves as numbers, and carries from the low half
+# into the high one with a single comparison, so an addition costs the
+# same few dispatches whatever the length of its carry chain; the bytes of
+# each sum below `2^32` are the low four bytes of its `2^52` pattern.
 
 +architect yegor256@gmail.com
 +home https://github.com/objectionary/eo
@@ -104,17 +110,48 @@
     i64 ^.as-bytes.not
     i64 00-00-00-00-00-00-00-01
   [^ x] > plus
-    if. > [^ a b] >> carried
-      b.eq 00-00-00-00-00-00-00-00
-      i64 a
-      ^.carried
-        a.xor b
-        left.
-          a.and b
-          1
-    | > @
-      ^.as-bytes
-      x.as-bytes
+    i64 > @
+      concat.
+        slice.
+          as-bytes.
+            if.
+              upper.gt 4503603922337791
+              upper.minus 4294967296
+              upper
+          4
+          4
+        slice.
+          as-bytes.
+            carried.if
+              lower.minus 4294967296
+              lower
+          4
+          4
+    lower.gt 4503603922337791 > carried
+    plus. > lower
+      number
+        43-30-00-00-00-00-00-00.or
+          ^.as-bytes.and 00-00-00-00-FF-FF-FF-FF
+      minus.
+        number
+          43-30-00-00-00-00-00-00.or
+            x.as-bytes.and 00-00-00-00-FF-FF-FF-FF
+        4503599627370496
+    plus. > upper
+      plus.
+        number
+          43-30-00-00-00-00-00-00.or
+            and.
+              ^.as-bytes.right 32
+              00-00-00-00-FF-FF-FF-FF
+        minus.
+          number
+            43-30-00-00-00-00-00-00.or
+              and.
+                x.as-bytes.right 32
+                00-00-00-00-FF-FF-FF-FF
+          4503599627370496
+      carried.if 1 0
   [^ x] > times
     if. > [^ acc a b] > looped
       b.eq 00-00-00-00-00-00-00-00
@@ -172,6 +209,10 @@
 
   not. ++> can-be-less-with-a-large-difference
     5000000000000000000.as-i64.lt -5000000000000000000.as-i64
+
+  eq. ++> can-carry-an-addition-into-the-upper-half
+    4294967295.as-i64.plus 1.as-i64
+    4294967296.as-i64
 
   eq. ++> can-carry-an-addition-through-all-bytes
     plus.
