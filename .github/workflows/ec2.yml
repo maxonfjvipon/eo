@@ -64,14 +64,9 @@ jobs:
       - uses: JesseTG/rm@v1.0.3
         with:
           path: ~/.m2/repository/org/eolang
-      # The `eo.maxmem` of `org.eolang.Maxmem` binds one test at a time, and
-      # `junit.jupiter.execution.parallel.config.dynamic.factor` is one, so
-      # this box runs as many tests at once as it has cores. On a c8i.4xlarge
-      # that is sixteen, and sixteen budgets of 4G on a 24G heap can never
-      # hold: every test stays inside the budget it was given, no test is ever
-      # reported as over it, and the heap dies under the population instead.
-      # A gigabyte a test keeps the sum under the heap with room for the
-      # collector to work in, and matches the budget of every other job.
+      # `eo.maxmem` binds one test, while this box runs as many at once as
+      # it has cores: sixteen budgets of 4G on a 24G heap can never hold, so
+      # every test stayed inside its own and the heap died under all of them.
       - run: mvn -ntp --errors --batch-mode '-Deo.coverageTracking=true' '-Deo.deadline=120' '-Deo.maxmem=1G' '-Dheap-size=24G' -Psite -Pjacoco clean install site
   terminate-instance:
     needs:

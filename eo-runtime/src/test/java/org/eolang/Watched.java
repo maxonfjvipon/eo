@@ -18,33 +18,25 @@ import org.opentest4j.TestAbortedException;
  * that the threads it starts land in the same group and are counted with
  * it. While it runs, the group is asked every few milliseconds how much it
  * has allocated. The moment the answer is over the limit, the group is
- * interrupted and waited for: dataization gives up on the very next
- * attribute lookup of an interrupted thread (see {@link ExInterrupted}), so
- * the objects it was building become garbage and the heap comes back to the
- * tests that still need it.</p>
+ * interrupted and given a bounded grace to actually stop: dataization gives
+ * up on the very next attribute lookup of an interrupted thread (see
+ * {@link ExInterrupted}), so the objects it was building become garbage and
+ * the heap comes back to the tests that still need it, once the wait is
+ * over.</p>
  *
- * <p>The waiting is the whole point of the guard and not a courtesy. A skip
- * reported while the body is still running gives the heap back to nobody:
- * JUnit hands the slot of the test to the next one, the thread of the body
- * keeps allocating on a heap that now has one more test on it, and the
- * {@code OutOfMemoryError} lands minutes later in a test that did nothing
- * wrong (#8336). So the group is interrupted again on every turn of the
- * wait, since one interrupt is lost the moment anything swallows the
- * {@link InterruptedException} it raises, and the guard does not return
- * until the body is out. A body that is still over its budget when the
- * grace runs out is reported as a failure naming what it holds, rather than
- * as a skip: a build that fails on the test that ate the heap says more
- * than one that dies in the next test to ask for a byte. A body stuck on
- * something no interrupt can reach while holding nothing stays a skip,
- * since the heap is not what it is keeping. Every thread the body started
- * is in the group as well, so each of them is asked to stop as many times
- * as the body is.</p>
- *
- * <p>The limit binds one test at a time, so it is only a bound on the heap
- * when the tests that may run at once all fit into it: the budget times the
- * number of workers JUnit is given must stay under {@code -Xmx}, or a
- * population of tests, every one of them inside the budget it was given,
- * takes the heap down together and no test is ever reported as over it.</p>
+ * <p>The wait is the whole point of the guard and not a courtesy. A skip
+ * reported while the body still runs gives the heap back to nobody: JUnit
+ * hands the slot to the next test while the body keeps allocating, and the
+ * {@code OutOfMemoryError} lands minutes later in a test that ate nothing
+ * (#8336). So the group is interrupted on every turn of the wait, since one
+ * interrupt is lost the moment anything swallows the
+ * {@link InterruptedException} it raises, and the guard returns only once
+ * the body is out or the five seconds it is given run out. A body still
+ * over its budget by then fails the test rather than skipping it, naming
+ * what it holds. One stuck on something no interrupt can reach while
+ * holding nothing stays a skip, since the heap is not what it keeps. The
+ * budget binds one test at a time, so it bounds the heap only while the
+ * budget times the workers JUnit is given stays under {@code -Xmx}.</p>
  *
  * <p>A body that ends between two readings is judged all the same, on the
  * reading it took of itself on the way out. A body that failed, though,
@@ -55,11 +47,11 @@ import org.opentest4j.TestAbortedException;
  * the one JUnit interrupts when the test outlives {@code eo.deadline}: the
  * timeout of a test is scheduled against the thread that enters the
  * interceptor, not against the thread the body ends up on. That interrupt
- * therefore has to be carried over to the group by hand, and waited for
- * just the same. Without it the deadline stops watching and nothing else,
- * the body is left running on a thread nobody waits for any more, and a
- * suite where many tests outlive their second ends up with as many runaway
- * threads, all of them allocating, until the heap is gone.</p>
+ * therefore has to be carried over to the group by hand. Without it the
+ * deadline stops watching and nothing else, the body is left running on a
+ * thread nobody waits for any more, and a suite where many tests outlive
+ * their second ends up with as many runaway threads, all of them
+ * allocating, until the heap is gone.</p>
  *
  * <p>The test itself is reported as skipped rather than as failed, for the
  * same reason {@link Deadline} reports a slow one as skipped: a budget that
@@ -67,15 +59,11 @@ import org.opentest4j.TestAbortedException;
  * code under test.</p>
  *
  * @since 0.75.0
- * @todo #8336:30min Wait for the threads a body left behind too. The guard
- *  waits for the body and keeps interrupting everything in its group while
- *  it does, but a thread the body started and never joined may still be
- *  running when the guard returns, holding whatever it opened. JUnit closes
- *  the context right behind it and deletes the {@code @TempDir} of that
- *  test, which on windows cannot be deleted while a file in it is open, so
- *  the skip comes out as a failure that names neither the memory nor the
- *  test. Either wait for the group to empty as well, or say plainly which
- *  threads outlived the test.
+ * @todo #8336:30min Wait for the threads a body left behind too. They are
+ *  interrupted as often as the body is, but never waited for, so one may
+ *  still hold a file when JUnit deletes the {@code @TempDir} of the test
+ *  behind it, which on windows fails. Wait for the group to empty as well,
+ *  or say plainly which threads outlived the test.
  */
 @SuppressWarnings({"PMD.AvoidThreadGroup", "PMD.AvoidCatchingGenericException"})
 final class Watched {
@@ -94,17 +82,10 @@ final class Watched {
      */
     private static final String OUTLIVED = String.join(
         " ",
-        "The test allocated %d bytes, which is over the %d bytes of",
-        "eo.maxmem it was given, but its body would not stop within %d",
-        "milliseconds of being interrupted and still holds the heap;",
-        "the build fails here, on the test that ate the memory, rather",
-        "than in whatever test the OutOfMemoryError happens to land in"
+        "The test allocated %d bytes, over the %d bytes of eo.maxmem it was",
+        "given, and would not stop within %d milliseconds of being",
+        "interrupted, so it still holds the heap"
     );
-
-    /**
-     * How often the body is looked at, in milliseconds.
-     */
-    private static final long TICK = 50L;
 
     /**
      * How many tests have been watched, to give every group its own name.
@@ -123,12 +104,6 @@ final class Watched {
 
     /**
      * Ctor.
-     *
-     * <p>Five seconds is what a terminated body gets to stop, which is
-     * thousands of attribute lookups more than dataization needs to notice
-     * the interrupt, and short enough that a body which will not stop is
-     * named quickly.</p>
-     *
      * @param bytes How many bytes the body may allocate, zero for no limit
      */
     Watched(final long bytes) {
@@ -164,7 +139,7 @@ final class Watched {
         }
     }
 
-    // @checkstyle IllegalThrowsCheck (36 lines)
+    // @checkstyle IllegalThrowsCheck (39 lines)
     private void guarded(final InvocationInterceptor.Invocation<Void> body) throws Throwable {
         final ThreadGroup group = new ThreadGroup(
             String.format("maxmem-%d", Watched.COUNT.incrementAndGet())
@@ -180,7 +155,7 @@ final class Watched {
         thread.start();
         boolean over = false;
         try {
-            while (!done.await(Watched.TICK, TimeUnit.MILLISECONDS)) {
+            while (!done.await(50L, TimeUnit.MILLISECONDS)) {
                 if (consumed.bytes() > this.limit) {
                     over = true;
                     break;
@@ -217,7 +192,7 @@ final class Watched {
         group.interrupt();
         while (done.getCount() > 0L && System.currentTimeMillis() < deadline) {
             try {
-                done.await(Watched.TICK, TimeUnit.MILLISECONDS);
+                done.await(50L, TimeUnit.MILLISECONDS);
             } catch (final InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 break;
