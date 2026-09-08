@@ -31,12 +31,14 @@ import org.opentest4j.TestAbortedException;
  * (#8336). So the group is interrupted on every turn of the wait, since one
  * interrupt is lost the moment anything swallows the
  * {@link InterruptedException} it raises, and the guard returns only once
- * the body is out or the five seconds it is given run out. A body still
- * over its budget by then fails the test rather than skipping it, naming
- * what it holds. One stuck on something no interrupt can reach while
- * holding nothing stays a skip, since the heap is not what it keeps. The
- * budget binds one test at a time, so it bounds the heap only while the
- * budget times the workers JUnit is given stays under {@code -Xmx}.</p>
+ * the body is out or the five seconds it is given run out. Either way the
+ * test is reported as skipped, and the message says which of the two
+ * happened: a body that would not stop is worth naming, but it is not
+ * worth failing a test over, since a budget a bigger box would never have
+ * reached says nothing about the code under test whether the body noticed
+ * the interrupt or not. The budget binds one test at a time, so it bounds
+ * the heap only while the budget times the workers JUnit is given stays
+ * under {@code -Xmx}.</p>
  *
  * <p>A body that ends between two readings is judged all the same, on the
  * reading it took of itself on the way out. A body that failed, though,
@@ -74,17 +76,16 @@ final class Watched {
     private static final String MESSAGE = String.join(
         " ",
         "The test allocated %d bytes, which is over the %d bytes",
-        "of eo.maxmem it was given, so it was terminated"
+        "of eo.maxmem it was given, so it was terminated%s"
     );
 
     /**
-     * What is said about a test whose body would not stop.
+     * What is added when the body of a test would not stop.
      */
     private static final String OUTLIVED = String.join(
         " ",
-        "The test allocated %d bytes, over the %d bytes of eo.maxmem it was",
-        "given, and would not stop within %d milliseconds of being",
-        "interrupted, so it still holds the heap"
+        ", and it would not stop within %d milliseconds of being",
+        "interrupted, so its thread may still be holding the heap"
     );
 
     /**
@@ -162,28 +163,18 @@ final class Watched {
                 }
             }
         } catch (final InterruptedException ex) {
-            this.terminate(group, done, consumed);
+            this.stopped(group, done);
             throw ex;
         }
         if (over) {
-            this.terminate(group, done, consumed);
-            throw this.aborted(consumed.bytes());
+            throw this.aborted(consumed, this.stopped(group, done));
         }
         final Throwable error = failure.get();
         if (error != null) {
             throw error;
         }
         if (consumed.bytes() > this.limit) {
-            throw this.aborted(consumed.bytes());
-        }
-    }
-
-    private void terminate(final ThreadGroup group, final CountDownLatch done,
-        final Consumed consumed) {
-        if (!this.stopped(group, done) && consumed.bytes() > this.limit) {
-            throw new IllegalStateException(
-                String.format(Watched.OUTLIVED, consumed.bytes(), this.limit, this.grace)
-            );
+            throw this.aborted(consumed, true);
         }
     }
 
@@ -202,9 +193,15 @@ final class Watched {
         return done.getCount() == 0L;
     }
 
-    private TestAbortedException aborted(final long taken) {
+    private TestAbortedException aborted(final Consumed consumed, final boolean gone) {
+        final String tail;
+        if (gone) {
+            tail = "";
+        } else {
+            tail = String.format(Watched.OUTLIVED, this.grace);
+        }
         return new TestAbortedException(
-            String.format(Watched.MESSAGE, taken, this.limit)
+            String.format(Watched.MESSAGE, consumed.bytes(), this.limit, tail)
         );
     }
 
