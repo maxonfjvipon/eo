@@ -39,11 +39,6 @@ import java.util.stream.Stream;
 public final class Rendering {
 
     /**
-     * The forma of a tuple, which Java carries as the {@code Phi} it is.
-     */
-    private static final String TUPLE = "tuple";
-
-    /**
      * The program.
      */
     private final Program program;
@@ -99,7 +94,7 @@ public final class Rendering {
             out = String.format(
                 "byte[] v%d = new Dataized(this.take(\"%s\")).take();", index, name
             );
-        } else if (Rendering.TUPLE.equals(forma)) {
+        } else if ("tuple".equals(forma)) {
             out = String.format("Phi v%d = this.take(\"%s\");", index, name);
         } else {
             throw new IllegalStateException(
@@ -245,34 +240,34 @@ public final class Rendering {
     }
 
     /**
-     * The Java expression of the object a key names, for a call back
-     * into EO.
+     * The name of the void a key names, under which the atom holds the
+     * object it was given.
      *
-     * <p>A step and a literal are the datum they are, so each is wrapped
-     * back into an object the way {@link Call} explains. A void is not:
-     * the tables witness the forma its value dataizes to, which an
-     * object decorating a datum — a chunk of memory, an input of bytes —
-     * answers as well as the datum itself, and such an object owns
-     * methods the datum has never heard of. A datum rebuilt from the
-     * bytes of one would refuse the very method the call takes, so the
-     * void hands over the object it holds instead, read straight off the
-     * atom, which is the object EO would dispatch on. A program that
-     * repeats has no such object to hand over — its voids are locals the
-     * loop rebinds, and the one the atom holds is only the first value
-     * of them — so a call in one is refused.</p>
+     * <p>A {@link Call} needs that object, not the datum of its bytes:
+     * the tables witness the forma a void dataizes to, and an object
+     * decorating a datum — a chunk of memory, an input of bytes —
+     * answers there as well as the datum itself while owning methods the
+     * datum never heard of. A program that repeats has no such object to
+     * name, since its voids are locals the loop rebinds, so a call in
+     * one is refused.</p>
      *
-     * @param key The key, such as {@code sym:v0} or {@code number:40-...}
-     * @return The expression, such as {@code this.take("x")}
+     * @param key The key of a void, such as {@code sym:v0}
+     * @return The name, such as {@code x}
      */
-    public String held(final String key) {
-        final String[] parts = key.split(":", 2);
-        final String out;
-        if ("sym".equals(parts[0]) && parts[1].charAt(0) == 'v') {
-            out = String.format("this.take(\"%s\")", this.named(parts[1]));
-        } else {
-            out = this.wrapped(key);
+    public String named(final String key) {
+        if (this.program.repeats()) {
+            throw new IllegalStateException(
+                String.format("The void '%s' is rebound by a repeat, so no call can reach it", key)
+            );
         }
-        return out;
+        final List<String> names = new ArrayList<>(this.program.inputs().keySet());
+        final int index = Integer.parseInt(key.split(":", 2)[1].substring(1));
+        if (index >= names.size()) {
+            throw new IllegalStateException(
+                String.format("A call reads void #%d, which the fragment lacks", index)
+            );
+        }
+        return names.get(index);
     }
 
     /**
@@ -310,42 +305,6 @@ public final class Rendering {
         return out;
     }
 
-    private String named(final String symbol) {
-        if (this.program.repeats()) {
-            throw new IllegalStateException(
-                String.format(
-                    "The void '%s' is rebound by a repeat, so no call can reach the object it holds",
-                    symbol
-                )
-            );
-        }
-        final List<String> names = new ArrayList<>(this.program.inputs().keySet());
-        final int index = Integer.parseInt(symbol.substring(1));
-        if (index >= names.size()) {
-            throw new IllegalStateException(
-                String.format("A call reads void #%d, which the fragment lacks", index)
-            );
-        }
-        return names.get(index);
-    }
-
-    private String wrapped(final String key) {
-        final String kind = this.kind(key);
-        final String expression = this.expression(key);
-        final String out;
-        if ("string".equals(kind)) {
-            out = String.format(
-                "new Data.ToPhi(new String(%s, java.nio.charset.StandardCharsets.UTF_8))",
-                expression
-            );
-        } else if (Rendering.TUPLE.equals(kind) || "object".equals(kind)) {
-            out = expression;
-        } else {
-            out = String.format("new Data.ToPhi(%s)", expression);
-        }
-        return out;
-    }
-
     private static String typed(final String carrier, final String what) {
         final String out;
         if ("number".equals(carrier)) {
@@ -354,7 +313,7 @@ public final class Rendering {
             out = "boolean";
         } else if ("bytes".equals(carrier)) {
             out = "byte[]";
-        } else if (Rendering.TUPLE.equals(carrier) || "object".equals(carrier)) {
+        } else if ("tuple".equals(carrier) || "object".equals(carrier)) {
             out = "Phi";
         } else {
             throw new IllegalStateException(

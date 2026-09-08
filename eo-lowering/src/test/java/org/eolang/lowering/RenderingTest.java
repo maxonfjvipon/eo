@@ -142,31 +142,19 @@ final class RenderingTest {
     }
 
     @Test
-    void handsOverObjectOfVoid() {
+    void namesVoidBehindKey() {
         MatcherAssert.assertThat(
-            "a void must hand over the object it holds, not a datum of its bytes, but it didnt",
+            "the void a key names must be named, so a call reaches its object, but it isnt",
             new Rendering(
                 new Protocol(Collections.emptyList(), "sym:v0", "bytes"),
                 Collections.singletonMap("b", "bytes")
-            ).held("sym:v0"),
-            Matchers.equalTo("this.take(\"b\")")
+            ).named("sym:v0"),
+            Matchers.equalTo("b")
         );
     }
 
     @Test
-    void wrapsLiteralHandedOver() {
-        MatcherAssert.assertThat(
-            "a literal handed over must be wrapped back into an object, but it wasnt",
-            new Rendering(
-                new Protocol(Collections.emptyList(), "sym:v0", "bytes"),
-                Collections.singletonMap("b", "bytes")
-            ).held("bool:FF-"),
-            Matchers.equalTo("new Data.ToPhi(true)")
-        );
-    }
-
-    @Test
-    void refusesObjectOfVoidRebound() {
+    void refusesToNameVoidRebound() {
         final Rendering rendering = new Rendering(
             new Protocol(
                 Collections.emptyList(),
@@ -176,8 +164,8 @@ final class RenderingTest {
         );
         Assertions.assertThrows(
             IllegalStateException.class,
-            () -> rendering.held("sym:v0"),
-            "a repeat rebinds its voids, so no call may reach the object one holds, but it did"
+            () -> rendering.named("sym:v0"),
+            "a repeat rebinds its voids, so no call may reach one of them, but it did"
         );
     }
 

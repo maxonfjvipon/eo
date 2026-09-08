@@ -26,10 +26,10 @@ import java.util.stream.Stream;
  * protocol that repeats, the way its answer would, and so does the
  * reason of a protocol that fails.</p>
  *
- * <p>The operands of a {@link Dispatch} are no reads: a call back into
- * EO takes the object a void holds, not the datum of its bytes, so a
- * void nothing but a call reaches is never dataized here — the way EO
- * itself leaves it to the method to dataize what it needs.</p>
+ * <p>The operands of a {@link Dispatch} are no reads: a call takes the
+ * object a void holds, not the datum of its bytes, so a void nothing but
+ * a call reaches is never dataized here, the way EO leaves that to the
+ * method.</p>
  *
  * @since 0.76.0
  */

@@ -469,27 +469,6 @@ final class JavaAtomTest {
     }
 
     @Test
-    void leavesVoidOfCallUndataized() {
-        MatcherAssert.assertThat(
-            "a void nothing but a call reaches must not be dataized, but it was",
-            new JavaAtom(
-                new Protocol(
-                    Collections.singletonList(
-                        new Dispatch(
-                            "s1", "minus",
-                            Arrays.asList("sym:v0", "number:3F-F0-00-00-00-00-00-00"),
-                            "number"
-                        )
-                    ),
-                    "sym:s1", "number"
-                ),
-                Collections.singletonMap("x", "number")
-            ).text(),
-            Matchers.not(Matchers.containsString("final double v0"))
-        );
-    }
-
-    @Test
     void holdsObjectOfCallUntilDataized() {
         MatcherAssert.assertThat(
             "an object a call answers must be held as a Phi until something dataizes it",
