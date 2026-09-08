@@ -36,7 +36,9 @@ import org.opentest4j.TestAbortedException;
  * as a skip: a build that fails on the test that ate the heap says more
  * than one that dies in the next test to ask for a byte. A body stuck on
  * something no interrupt can reach while holding nothing stays a skip,
- * since the heap is not what it is keeping.</p>
+ * since the heap is not what it is keeping. Every thread the body started
+ * is in the group as well, so each of them is asked to stop as many times
+ * as the body is.</p>
  *
  * <p>The limit binds one test at a time, so it is only a bound on the heap
  * when the tests that may run at once all fit into it: the budget times the
@@ -100,11 +102,6 @@ final class Watched {
     );
 
     /**
-     * How long a terminated body is given to actually stop, in milliseconds.
-     */
-    private static final long GRACE = 5_000L;
-
-    /**
      * How often the body is looked at, in milliseconds.
      */
     private static final long TICK = 50L;
@@ -126,10 +123,16 @@ final class Watched {
 
     /**
      * Ctor.
+     *
+     * <p>Five seconds is what a terminated body gets to stop, which is
+     * thousands of attribute lookups more than dataization needs to notice
+     * the interrupt, and short enough that a body which will not stop is
+     * named quickly.</p>
+     *
      * @param bytes How many bytes the body may allocate, zero for no limit
      */
     Watched(final long bytes) {
-        this(bytes, Watched.GRACE);
+        this(bytes, 5_000L);
     }
 
     /**
@@ -200,13 +203,6 @@ final class Watched {
         }
     }
 
-    /**
-     * Stop the body and say so plainly if it will not stop.
-     * @param group The group the body runs in
-     * @param done The latch the body counts down on its way out
-     * @param consumed How much the group has taken
-     * @throws IllegalStateException If the body outlived its test
-     */
     private void terminate(final ThreadGroup group, final CountDownLatch done,
         final Consumed consumed) {
         if (!this.stopped(group, done) && consumed.bytes() > this.limit) {
@@ -216,21 +212,6 @@ final class Watched {
         }
     }
 
-    /**
-     * Interrupt the group until the body is out of it.
-     *
-     * <p>The group is interrupted on every turn and not once: a body
-     * blocked in a sleep, a wait or an IO call is given an
-     * {@link InterruptedException} instead of a raised flag, and any
-     * {@code catch} that swallows it leaves the thread running with the
-     * flag down and the signal gone for good. Every thread the body
-     * started is in the group too, so each of them is asked to stop as
-     * many times as the body is.</p>
-     *
-     * @param group The group the body runs in
-     * @param done The latch the body counts down on its way out
-     * @return TRUE if the body is not running any more
-     */
     private boolean stopped(final ThreadGroup group, final CountDownLatch done) {
         final long deadline = System.currentTimeMillis() + this.grace;
         group.interrupt();
