@@ -53,7 +53,7 @@ final class Dispatched {
     private final Map<String, Map<String, String>> named;
 
     /**
-     * What every dispatch takes its attribute from, from {@link Xmirs}.
+     * What every dispatch takes its attribute from, from {@link Taken}.
      */
     private final Map<String, String> receivers;
 
@@ -100,7 +100,8 @@ final class Dispatched {
         final Filled filled = new Filled(
             pairs,
             owned,
-            new Bound(this.args, this.named, this.receivers, pairs, owned).all()
+            new Bound(this.args, this.named, this.receivers, pairs, owned).all(),
+            this.hollows
         );
         final Map<String, String> found = new HashMap<>(0);
         for (final Site dispatch : this.all) {

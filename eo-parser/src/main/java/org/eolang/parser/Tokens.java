@@ -175,7 +175,7 @@ final class Tokens {
         final int start = this.cursor;
         if (this.atEnd()) {
             throw new ParseError(
-                this.span.line(), this.span.indent() + start,
+                this.span.line(), Tokens.clamped(this.span.indent() + start, this.span),
                 "expected identifier"
             );
         }
@@ -423,6 +423,32 @@ final class Tokens {
     }
 
     /**
+     * Whether a reversed dispatch stands at the cursor — a dispatch
+     * operator that nothing follows on the token, the way {@code if.}
+     * reads (R-3.6). A name after the operator makes it an ordinary
+     * chain link instead, and only a head that may be reversed at all
+     * can start one.
+     * @param head The value read right before the cursor
+     * @return True if the head is the name of a reversed dispatch
+     */
+    boolean reversedAhead(final Value head) {
+        final boolean result;
+        if (head.reversible() && !this.atEnd() && this.dispatchAhead()) {
+            final int skip;
+            if (this.current() == '?') {
+                skip = 2;
+            } else {
+                skip = 1;
+            }
+            final int probe = this.cursor + skip;
+            result = probe >= this.body.length() || this.body.charAt(probe) == ' ';
+        } else {
+            result = false;
+        }
+        return result;
+    }
+
+    /**
      * Consume a dispatch operator at the cursor — a plain {@code .} or
      * the fragile {@code ?.} (R-3.5) — and report which it was. The
      * cursor must sit on a {@link #dispatchAhead()} position.
@@ -496,7 +522,7 @@ final class Tokens {
         }
         if (this.cursor == start) {
             throw new ParseError(
-                this.span.line(), this.span.indent() + start,
+                this.span.line(), Tokens.clamped(this.span.indent() + start, this.span),
                 "expected binding label after `:`"
             );
         }
@@ -595,6 +621,10 @@ final class Tokens {
             idx = idx + 1;
         }
         return idx;
+    }
+
+    private static int clamped(final int pos, final Span source) {
+        return Math.min(pos, source.text().length() - 1);
     }
 
     private static boolean singleToken(final String inside) {
