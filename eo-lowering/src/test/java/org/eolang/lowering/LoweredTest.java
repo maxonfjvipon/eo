@@ -36,8 +36,8 @@ import org.slf4j.helpers.SubstituteLogger;
  * at all. They run in one thread for that reason.</p>
  *
  * <p>A capture also has to wait for SLF4J to bind itself to the logging
- * back-end, which is what {@code bound()} below does. The binding starts
- * with the first logging call of the JVM, made by whichever test class
+ * back-end, which is what the loop below does. The binding starts with
+ * the first logging call of the JVM, made by whichever test class
  * happens to run first, and while it is under way SLF4J answers every
  * other thread with a substitute logger: one that says debug is
  * enabled, records what it is given instead of passing it on, and
@@ -133,15 +133,11 @@ final class LoweredTest {
         );
     }
 
-    private static void bound() {
+    private static List<String> spoken(final Formas formas, final String xmir,
+        final Path temp) throws IOException {
         while (LoggerFactory.getLogger(Lowered.class) instanceof SubstituteLogger) {
             Thread.onSpinWait();
         }
-    }
-
-    private static List<String> spoken(final Formas formas, final String xmir,
-        final Path temp) throws IOException {
-        LoweredTest.bound();
         final List<String> messages = new ArrayList<>(0);
         final Appender appender = new AppenderSkeleton() {
             @Override
