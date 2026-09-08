@@ -21,13 +21,22 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * Test case for {@link Lowered}.
+ *
+ * <p>The logger of {@link Lowered} is one object for the whole JVM, and
+ * a capture of it is a level and an appender set on that object, so two
+ * of these tests in flight at once read each other's messages, or none
+ * at all. They run in one thread for that reason.</p>
+ *
  * @since 0.76.0
  */
 @ExtendWith(MktmpResolver.class)
+@Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock("org.eolang.lowering.Lowered.log")
 final class LoweredTest {
 
