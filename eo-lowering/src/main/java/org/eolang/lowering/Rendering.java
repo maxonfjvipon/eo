@@ -39,6 +39,11 @@ import java.util.stream.Stream;
 public final class Rendering {
 
     /**
+     * The forma of a tuple, which Java carries as the {@code Phi} it is.
+     */
+    private static final String TUPLE = "tuple";
+
+    /**
      * The program.
      */
     private final Program program;
@@ -94,7 +99,7 @@ public final class Rendering {
             out = String.format(
                 "byte[] v%d = new Dataized(this.take(\"%s\")).take();", index, name
             );
-        } else if ("tuple".equals(forma)) {
+        } else if (Rendering.TUPLE.equals(forma)) {
             out = String.format("Phi v%d = this.take(\"%s\");", index, name);
         } else {
             throw new IllegalStateException(
@@ -333,7 +338,7 @@ public final class Rendering {
                 "new Data.ToPhi(new String(%s, java.nio.charset.StandardCharsets.UTF_8))",
                 expression
             );
-        } else if ("tuple".equals(kind) || "object".equals(kind)) {
+        } else if (Rendering.TUPLE.equals(kind) || "object".equals(kind)) {
             out = expression;
         } else {
             out = String.format("new Data.ToPhi(%s)", expression);
@@ -349,7 +354,7 @@ public final class Rendering {
             out = "boolean";
         } else if ("bytes".equals(carrier)) {
             out = "byte[]";
-        } else if ("tuple".equals(carrier) || "object".equals(carrier)) {
+        } else if (Rendering.TUPLE.equals(carrier) || "object".equals(carrier)) {
             out = "Phi";
         } else {
             throw new IllegalStateException(

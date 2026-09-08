@@ -167,15 +167,16 @@ final class RenderingTest {
 
     @Test
     void refusesObjectOfVoidRebound() {
+        final Rendering rendering = new Rendering(
+            new Protocol(
+                Collections.emptyList(),
+                Collections.singletonList("number:3F-F0-00-00-00-00-00-00")
+            ),
+            Collections.singletonMap("x", "number")
+        );
         Assertions.assertThrows(
             IllegalStateException.class,
-            () -> new Rendering(
-                new Protocol(
-                    Collections.emptyList(),
-                    Collections.singletonList("number:3F-F0-00-00-00-00-00-00")
-                ),
-                Collections.singletonMap("x", "number")
-            ).held("sym:v0"),
+            () -> rendering.held("sym:v0"),
             "a repeat rebinds its voids, so no call may reach the object one holds, but it did"
         );
     }
