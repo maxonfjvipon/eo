@@ -11,13 +11,14 @@ import java.util.List;
 /**
  * The Java of one {@link Dispatch} step: a call back into EO.
  *
- * <p>The receiver and the arguments are Java locals, so each is wrapped
- * back into the object it stands for: a number, a bool and bytes
- * through {@code Data.ToPhi}, a string through the same after the bytes
- * are read as text, since that is what the runtime makes a string of,
- * and a tuple or an object as the {@code Phi} it already is. The method
- * is taken of the receiver with {@code PhDispatch} and applied to the
- * arguments by position with {@code PhApplication}, the way the
+ * <p>Every operand is the object it is: a void hands over the object it
+ * holds, read straight off the atom, and a step or a literal hands over
+ * the datum it is, wrapped back into an object — a number, a bool and
+ * bytes through {@code Data.ToPhi}, a string through the same after the
+ * bytes are read as text, since that is what the runtime makes a string
+ * of, and a tuple or an object as the {@code Phi} it already is. The
+ * method is taken of the receiver with {@code PhDispatch} and applied to
+ * the arguments by position with {@code PhApplication}, the way the
  * transpiler spells a call, and the value is dataized into the forma the step
  * carries — a number, a bool, or the bytes of bytes and a string — or
  * left as the object when the forma is {@code object}.</p>
@@ -54,13 +55,15 @@ public final class Call {
         final List<String> keys = this.step.keys();
         String call = String.format(
             "new PhDispatch(%s, \"%s\")",
-            this.wrapped(keys.get(0)), this.step.atom().substring(1)
+            this.values.held(keys.get(0)), this.step.atom().substring(1)
         );
         if (keys.size() > 1) {
             final Collection<String> binds = new ArrayList<>(keys.size());
             for (int idx = 1; idx < keys.size(); ++idx) {
                 binds.add(
-                    String.format("new Bind(%d, %s)", idx - 1, this.wrapped(keys.get(idx)))
+                    String.format(
+                        "new Bind(%d, %s)", idx - 1, this.values.held(keys.get(idx))
+                    )
                 );
             }
             call = String.format("new PhApplication(%s, %s)", call, String.join(", ", binds));
@@ -75,22 +78,6 @@ public final class Call {
             out = String.format("new Dataized(%s).take()", call);
         } else {
             out = call;
-        }
-        return out;
-    }
-
-    private String wrapped(final String key) {
-        final String kind = this.values.kind(key);
-        final String expr = this.values.expression(key);
-        final String out;
-        if ("string".equals(kind)) {
-            out = String.format(
-                "new Data.ToPhi(new String(%s, java.nio.charset.StandardCharsets.UTF_8))", expr
-            );
-        } else if ("tuple".equals(kind) || "object".equals(kind)) {
-            out = expr;
-        } else {
-            out = String.format("new Data.ToPhi(%s)", expr);
         }
         return out;
     }

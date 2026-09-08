@@ -458,14 +458,34 @@ final class JavaAtomTest {
                 Collections.singletonMap("x", "number")
             ).text(),
             Matchers.stringContainsInOrder(
-                "final double v0 = new Dataized(this.take(\"x\")).asNumber();",
                 String.format(
                     "final double s1 = new Dataized(new PhApplication(new PhDispatch(%s, %s), new Bind(0, %s))).asNumber();",
-                    "new Data.ToPhi(v0)", "\"minus\"",
+                    "this.take(\"x\")", "\"minus\"",
                     "new Data.ToPhi(Double.longBitsToDouble(0x3FF0000000000000L))"
                 ),
                 "return new Data.ToPhi(s1);"
             )
+        );
+    }
+
+    @Test
+    void leavesVoidOfCallUndataized() {
+        MatcherAssert.assertThat(
+            "a void nothing but a call reaches must not be dataized, but it was",
+            new JavaAtom(
+                new Protocol(
+                    Collections.singletonList(
+                        new Dispatch(
+                            "s1", "minus",
+                            Arrays.asList("sym:v0", "number:3F-F0-00-00-00-00-00-00"),
+                            "number"
+                        )
+                    ),
+                    "sym:s1", "number"
+                ),
+                Collections.singletonMap("x", "number")
+            ).text(),
+            Matchers.not(Matchers.containsString("final double v0"))
         );
     }
 
@@ -486,7 +506,7 @@ final class JavaAtomTest {
                 Collections.singletonMap("x", "number")
             ).text(),
             Matchers.stringContainsInOrder(
-                "final Phi s1 = new PhDispatch(new Data.ToPhi(v0), \"neg\");",
+                "final Phi s1 = new PhDispatch(this.take(\"x\"), \"neg\");",
                 "final byte[] s2 = new Dataized(s1).take();",
                 "return new Data.ToPhi(s2);"
             )

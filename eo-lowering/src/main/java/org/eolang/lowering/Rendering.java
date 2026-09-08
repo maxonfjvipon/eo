@@ -240,6 +240,37 @@ public final class Rendering {
     }
 
     /**
+     * The Java expression of the object a key names, for a call back
+     * into EO.
+     *
+     * <p>A step and a literal are the datum they are, so each is wrapped
+     * back into an object the way {@link Call} explains. A void is not:
+     * the tables witness the forma its value dataizes to, which an
+     * object decorating a datum — a chunk of memory, an input of bytes —
+     * answers as well as the datum itself, and such an object owns
+     * methods the datum has never heard of. A datum rebuilt from the
+     * bytes of one would refuse the very method the call takes, so the
+     * void hands over the object it holds instead, read straight off the
+     * atom, which is the object EO would dispatch on. A program that
+     * repeats has no such object to hand over — its voids are locals the
+     * loop rebinds, and the one the atom holds is only the first value
+     * of them — so a call in one is refused.</p>
+     *
+     * @param key The key, such as {@code sym:v0} or {@code number:40-...}
+     * @return The expression, such as {@code this.take("x")}
+     */
+    public String held(final String key) {
+        final String[] parts = key.split(":", 2);
+        final String out;
+        if ("sym".equals(parts[0]) && parts[1].charAt(0) == 'v') {
+            out = String.format("this.take(\"%s\")", this.named(parts[1]));
+        } else {
+            out = this.wrapped(key);
+        }
+        return out;
+    }
+
+    /**
      * The Java expression the atom hands to {@code Data.ToPhi}.
      *
      * <p>Where the fragment settled into a view of a local rather than
@@ -270,6 +301,42 @@ public final class Rendering {
                     key, own, carrier
                 )
             );
+        }
+        return out;
+    }
+
+    private String named(final String symbol) {
+        if (this.program.repeats()) {
+            throw new IllegalStateException(
+                String.format(
+                    "The void '%s' is rebound by a repeat, so no call can reach the object it holds",
+                    symbol
+                )
+            );
+        }
+        final List<String> names = new ArrayList<>(this.program.inputs().keySet());
+        final int index = Integer.parseInt(symbol.substring(1));
+        if (index >= names.size()) {
+            throw new IllegalStateException(
+                String.format("A call reads void #%d, which the fragment lacks", index)
+            );
+        }
+        return names.get(index);
+    }
+
+    private String wrapped(final String key) {
+        final String kind = this.kind(key);
+        final String expression = this.expression(key);
+        final String out;
+        if ("string".equals(kind)) {
+            out = String.format(
+                "new Data.ToPhi(new String(%s, java.nio.charset.StandardCharsets.UTF_8))",
+                expression
+            );
+        } else if ("tuple".equals(kind) || "object".equals(kind)) {
+            out = expression;
+        } else {
+            out = String.format("new Data.ToPhi(%s)", expression);
         }
         return out;
     }

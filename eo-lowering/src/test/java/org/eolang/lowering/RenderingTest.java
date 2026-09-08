@@ -142,6 +142,45 @@ final class RenderingTest {
     }
 
     @Test
+    void handsOverObjectOfVoid() {
+        MatcherAssert.assertThat(
+            "a void must hand over the object it holds, not a datum of its bytes, but it didnt",
+            new Rendering(
+                new Protocol(Collections.emptyList(), "sym:v0", "bytes"),
+                Collections.singletonMap("b", "bytes")
+            ).held("sym:v0"),
+            Matchers.equalTo("this.take(\"b\")")
+        );
+    }
+
+    @Test
+    void wrapsLiteralHandedOver() {
+        MatcherAssert.assertThat(
+            "a literal handed over must be wrapped back into an object, but it wasnt",
+            new Rendering(
+                new Protocol(Collections.emptyList(), "sym:v0", "bytes"),
+                Collections.singletonMap("b", "bytes")
+            ).held("bool:FF-"),
+            Matchers.equalTo("new Data.ToPhi(true)")
+        );
+    }
+
+    @Test
+    void refusesObjectOfVoidRebound() {
+        Assertions.assertThrows(
+            IllegalStateException.class,
+            () -> new Rendering(
+                new Protocol(
+                    Collections.emptyList(),
+                    Collections.singletonList("number:3F-F0-00-00-00-00-00-00")
+                ),
+                Collections.singletonMap("x", "number")
+            ).held("sym:v0"),
+            "a repeat rebinds its voids, so no call may reach the object one holds, but it did"
+        );
+    }
+
+    @Test
     void refusesOperandOfForeignForma() {
         Assertions.assertThrows(
             IllegalStateException.class,
