@@ -24,6 +24,20 @@ import org.opentest4j.TestAbortedException;
  * the heap comes back to the tests that still need it, once the wait is
  * over.</p>
  *
+ * <p>The wait is the whole point of the guard and not a courtesy. A skip
+ * reported while the body still runs gives the heap back to nobody: JUnit
+ * hands the slot to the next test while the body keeps allocating, and the
+ * {@code OutOfMemoryError} lands minutes later in a test that ate nothing
+ * (#8336). So the group is interrupted on every turn of the wait, since one
+ * interrupt is lost the moment anything swallows the
+ * {@link InterruptedException} it raises, and the guard returns only once
+ * the body is out or the five seconds it is given run out. A body still
+ * over its budget by then fails the test rather than skipping it, naming
+ * what it holds. One stuck on something no interrupt can reach while
+ * holding nothing stays a skip, since the heap is not what it keeps. The
+ * budget binds one test at a time, so it bounds the heap only while the
+ * budget times the workers JUnit is given stays under {@code -Xmx}.</p>
+ *
  * <p>A body that ends between two readings is judged all the same, on the
  * reading it took of itself on the way out. A body that failed, though,
  * fails the test with its own problem, whatever it ate: a broken test is
@@ -45,14 +59,11 @@ import org.opentest4j.TestAbortedException;
  * code under test.</p>
  *
  * @since 0.75.0
- * @todo #8336:30min Let a body that will not stop be waited for. A terminated
- *  body gets half a second to die and the skip is reported whether it died or
- *  not, so its threads outlive the test that owns them, holding whatever they
- *  opened. JUnit closes the context right behind them and deletes the
- *  {@code @TempDir} of that test, which on windows cannot be deleted while a
- *  file in it is open, so the skip comes out as a failure that names neither
- *  the memory nor the test. Either wait for the group to empty, or say
- *  plainly that the body outlived its test.
+ * @todo #8336:30min Wait for the threads a body left behind too. They are
+ *  interrupted as often as the body is, but never waited for, so one may
+ *  still hold a file when JUnit deletes the {@code @TempDir} of the test
+ *  behind it, which on windows fails. Wait for the group to empty as well,
+ *  or say plainly which threads outlived the test.
  */
 @SuppressWarnings({"PMD.AvoidThreadGroup", "PMD.AvoidCatchingGenericException"})
 final class Watched {
@@ -67,6 +78,16 @@ final class Watched {
     );
 
     /**
+     * What is said about a test whose body would not stop.
+     */
+    private static final String OUTLIVED = String.join(
+        " ",
+        "The test allocated %d bytes, over the %d bytes of eo.maxmem it was",
+        "given, and would not stop within %d milliseconds of being",
+        "interrupted, so it still holds the heap"
+    );
+
+    /**
      * How many tests have been watched, to give every group its own name.
      */
     private static final AtomicLong COUNT = new AtomicLong();
@@ -77,11 +98,26 @@ final class Watched {
     private final long limit;
 
     /**
+     * How long a terminated body is given to stop, in milliseconds.
+     */
+    private final long grace;
+
+    /**
      * Ctor.
      * @param bytes How many bytes the body may allocate, zero for no limit
      */
     Watched(final long bytes) {
+        this(bytes, 5_000L);
+    }
+
+    /**
+     * Ctor.
+     * @param bytes How many bytes the body may allocate, zero for no limit
+     * @param millis How long a terminated body is given to stop
+     */
+    Watched(final long bytes, final long millis) {
         this.limit = bytes;
+        this.grace = millis;
     }
 
     // @checkstyle IllegalThrowsCheck (13 lines)
@@ -126,12 +162,11 @@ final class Watched {
                 }
             }
         } catch (final InterruptedException ex) {
-            group.interrupt();
+            this.terminate(group, done, consumed);
             throw ex;
         }
         if (over) {
-            group.interrupt();
-            Watched.settle(done);
+            this.terminate(group, done, consumed);
             throw this.aborted(consumed.bytes());
         }
         final Throwable error = failure.get();
@@ -143,12 +178,28 @@ final class Watched {
         }
     }
 
-    private static void settle(final CountDownLatch done) {
-        try {
-            done.await(500L, TimeUnit.MILLISECONDS);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
+    private void terminate(final ThreadGroup group, final CountDownLatch done,
+        final Consumed consumed) {
+        if (!this.stopped(group, done) && consumed.bytes() > this.limit) {
+            throw new IllegalStateException(
+                String.format(Watched.OUTLIVED, consumed.bytes(), this.limit, this.grace)
+            );
         }
+    }
+
+    private boolean stopped(final ThreadGroup group, final CountDownLatch done) {
+        final long deadline = System.currentTimeMillis() + this.grace;
+        group.interrupt();
+        while (done.getCount() > 0L && System.currentTimeMillis() < deadline) {
+            try {
+                done.await(50L, TimeUnit.MILLISECONDS);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            group.interrupt();
+        }
+        return done.getCount() == 0L;
     }
 
     private TestAbortedException aborted(final long taken) {
