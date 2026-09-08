@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.SubstituteLogger;
 
 /**
  * Test case for {@link Lowered}.
@@ -32,6 +34,17 @@ import org.junit.jupiter.api.parallel.ResourceLock;
  * a capture of it is a level and an appender set on that object, so two
  * of these tests in flight at once read each other's messages, or none
  * at all. They run in one thread for that reason.</p>
+ *
+ * <p>A capture also has to wait for SLF4J to bind itself to the logging
+ * back-end, which is what {@code bound()} below does. The binding starts
+ * with the first logging call of the JVM, made by whichever test class
+ * happens to run first, and while it is under way SLF4J answers every
+ * other thread with a substitute logger: one that says debug is
+ * enabled, records what it is given instead of passing it on, and
+ * replays the records into the real logger once the binding is done. By
+ * then the appender of the capture is gone, so what {@link Lowered} says
+ * during the binding reaches nobody and the capture comes back
+ * empty.</p>
  *
  * @since 0.76.0
  */
@@ -120,8 +133,15 @@ final class LoweredTest {
         );
     }
 
+    private static void bound() {
+        while (LoggerFactory.getLogger(Lowered.class) instanceof SubstituteLogger) {
+            Thread.onSpinWait();
+        }
+    }
+
     private static List<String> spoken(final Formas formas, final String xmir,
         final Path temp) throws IOException {
+        LoweredTest.bound();
         final List<String> messages = new ArrayList<>(0);
         final Appender appender = new AppenderSkeleton() {
             @Override
