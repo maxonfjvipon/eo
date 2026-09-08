@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Test case for {@link PhDefault}.
+ *
  * @since 0.1
  */
 final class PhDefaultTest {
@@ -700,6 +701,7 @@ final class PhDefaultTest {
 
     /**
      * Rnd.
+     *
      * @since 0.1.0
      */
     private static final class Rnd extends PhDefault {
@@ -724,6 +726,7 @@ final class PhDefaultTest {
 
     /**
      * Int.
+     *
      * @since 0.36.0
      */
     private static final class Int extends PhDefault {
@@ -776,6 +779,7 @@ final class PhDefaultTest {
 
     /**
      * Foo.
+     *
      * @since 0.1.0
      */
     static final class Foo extends PhDefault {
@@ -802,6 +806,7 @@ final class PhDefaultTest {
 
     /**
      * Dummy.
+     *
      * @since 0.1.0
      */
     static final class WithVoidPhi extends PhDefault {
@@ -816,6 +821,7 @@ final class PhDefaultTest {
 
     /**
      * Counter.
+     *
      * @since 0.1.0
      */
     static final class Counter extends PhDefault {
@@ -855,6 +861,7 @@ final class PhDefaultTest {
 
     /**
      * Kid.
+     *
      * @since 0.1.0
      */
     static final class Kid extends PhDefault {
@@ -877,6 +884,7 @@ final class PhDefaultTest {
 
     /**
      * Endless Recursion.
+     *
      * @since 0.1.0
      */
     static final class EndlessRecursion extends PhDefault {
@@ -914,6 +922,7 @@ final class PhDefaultTest {
 
     /**
      * Recursive Phi.
+     *
      * @since 0.1.0
      */
     static final class RecursivePhi extends PhDefault {
@@ -955,6 +964,7 @@ final class PhDefaultTest {
 
     /**
      * RecursivePhiViaNew.
+     *
      * @since 0.1.0
      */
     static final class RecursivePhiViaNew extends PhDefault {

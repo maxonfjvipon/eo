@@ -65,6 +65,7 @@ final class Filled {
 
     /**
      * Ctor.
+     *
      * @param links The pairs, each name against the one it is a copy of
      * @param provided The provides table, by the name a type goes by
      * @param bound What every application and every dispatch fills, from
@@ -85,6 +86,7 @@ final class Filled {
 
     /**
      * What this answer turns out to be for this receiver.
+     *
      * @param answer The type of the attribute, as the table gave it
      * @param bearer The locator of the receiver the question was asked of
      * @return The type the answer stands for here, or the answer itself when

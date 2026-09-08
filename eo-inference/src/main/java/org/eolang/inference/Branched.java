@@ -54,6 +54,7 @@ final class Branched {
 
     /**
      * Ctor.
+     *
      * @param provided What the types certainly have
      * @param filled What the call put into the voids, by the locator of the
      *  void
@@ -71,6 +72,7 @@ final class Branched {
 
     /**
      * The one thing every formation this call reaches hands back.
+     *
      * @return The locator, empty when no formation hands back what it was
      *  given or they share nothing
      */

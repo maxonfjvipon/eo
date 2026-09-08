@@ -55,6 +55,7 @@ public final class Reduced implements Clue {
 
     /**
      * Ctor.
+     *
      * @param clues The clues to follow before the types are reduced
      */
     public Reduced(final Clue clues) {

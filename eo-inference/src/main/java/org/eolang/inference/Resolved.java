@@ -69,6 +69,7 @@ public final class Resolved implements Clue {
 
     /**
      * Ctor.
+     *
      * @param clues The clues to follow before the links are closed
      */
     public Resolved(final Clue clues) {

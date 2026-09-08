@@ -76,6 +76,7 @@ final class Behaved {
 
     /**
      * Ctor.
+     *
      * @param provides The provides table, as {@link Provides} wrote it
      * @param aliases The name every type goes by, from {@link Ends}
      */
@@ -86,6 +87,7 @@ final class Behaved {
 
     /**
      * What every type of the program behaves as.
+     *
      * @return The name to go by, by the locator of the type, without the types
      *  that behave as themselves
      */

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Test case for {@link Answers}.
+ *
  * @since 0.70.0
  */
 final class AnswersTest {

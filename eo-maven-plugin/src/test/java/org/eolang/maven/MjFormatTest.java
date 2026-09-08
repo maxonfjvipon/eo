@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test cases for {@link MjFormat}.
+ *
  * @since 0.57.0
  */
 @ExtendWith(MktmpResolver.class)

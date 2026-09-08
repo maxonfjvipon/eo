@@ -78,6 +78,7 @@ final class Answers {
 
     /**
      * Ctor.
+     *
      * @param rows The rows of the provides table, by the locator of their
      *  owner, from {@link Ungrouped}
      * @param voids Every void, with what the program was seen putting into
@@ -102,6 +103,7 @@ final class Answers {
 
     /**
      * What this object turns out to be.
+     *
      * @param locator The locator of the object
      * @param filled The locators of the voids this object has filled, its own
      *  and the ones filled earlier in its chain of copies

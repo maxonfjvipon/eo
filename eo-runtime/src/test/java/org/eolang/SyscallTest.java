@@ -37,6 +37,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 /**
  * Test case for the {@link Syscall} implementations behind the
  * {@code socket} object, both the POSIX and the Windows ones.
+ *
  * @since 0.40
  */
 @ExtendWith(EphemeralResolver.class)
@@ -187,6 +188,7 @@ final class SyscallTest {
 
     /**
      * Winsock tests.
+     *
      * @since 0.40.0
      */
     @Nested
@@ -498,6 +500,7 @@ final class SyscallTest {
 
     /**
      * Posix socket test.
+     *
      * @since 0.40.0
      */
     @Nested
@@ -751,6 +754,7 @@ final class SyscallTest {
 
     /**
      * Server on a given port.
+     *
      * @since 0.40.0
      */
     private static final class RandomServer {
@@ -767,6 +771,7 @@ final class SyscallTest {
 
         /**
          * Ctor.
+         *
          * @param port Port to bind to
          */
         RandomServer(final int port) {
@@ -775,6 +780,7 @@ final class SyscallTest {
 
         /**
          * Port the server is bound to.
+         *
          * @return Port number
          */
         int port() {
@@ -783,6 +789,7 @@ final class SyscallTest {
 
         /**
          * Start server on the given port.
+         *
          * @return Self
          */
         RandomServer started() throws IOException {
@@ -806,6 +813,7 @@ final class SyscallTest {
     /**
      * Simple scoped object.
      * true > [s]
+     *
      * @since 0.40.0
      */
     private static final class Simple extends PhDefault implements Atom {
@@ -829,6 +837,7 @@ final class SyscallTest {
      * s.accept > @
      * [client]
      * client.recv 14 > @
+     *
      * @since 0.40.0
      */
     private static final class Server extends PhDefault implements Atom {
@@ -840,6 +849,7 @@ final class SyscallTest {
 
         /**
          * Ctor.
+         *
          * @param received Reseived message size
          */
         Server(final int received) {
@@ -858,6 +868,7 @@ final class SyscallTest {
     /**
      * Client socket that receives message.
      * s.recv 14 > [s]
+     *
      * @since 0.40.0
      */
     private static final class Receiver extends PhDefault implements Atom {
@@ -869,6 +880,7 @@ final class SyscallTest {
 
         /**
          * Ctor.
+         *
          * @param received Reseived message size
          */
         Receiver(final int received) {
@@ -887,6 +899,7 @@ final class SyscallTest {
     /**
      * Scoped client socket.
      * s.send "Hello, Socket!" > [s]
+     *
      * @since 0.40.0
      */
     private static final class Client extends PhDefault implements Atom {
@@ -898,6 +911,7 @@ final class SyscallTest {
 
         /**
          * Ctor.
+         *
          * @param msg Message to send
          */
         Client(final String msg) {

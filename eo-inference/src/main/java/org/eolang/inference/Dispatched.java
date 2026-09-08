@@ -64,6 +64,7 @@ final class Dispatched {
 
     /**
      * Ctor.
+     *
      * @param provides The provides table
      * @param dispatches Every dispatch of the program
      * @param arguments The arguments of every application, from {@link Given}
@@ -90,6 +91,7 @@ final class Dispatched {
 
     /**
      * The pairs that follow from what is known, beyond what is known already.
+     *
      * @param pairs The pairs, each name against the one it is a copy of
      * @return The dispatches answered this time, each against the attribute it
      *  turns out to be, empty when nothing further can be answered
