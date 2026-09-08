@@ -23,7 +23,7 @@ import java.util.Map;
  * opens the dispatches rooted at that void, and the passes go round again.</p>
  *
  * @since 0.69.0
- * @todo #8274:120min Settle a chain in fewer passes than it has hops.
+ * @todo #8274:90min Settle a chain in fewer passes than it has hops.
  *  On eo-runtime this runs 128 passes of {@link Dispatched} and 44 of
  *  {@link Promoted} to settle 41,192 pairs, 77 of the passes adding one pair
  *  apiece, which is 30s of the 40s the tables take to build. The count is the
