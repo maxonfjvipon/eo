@@ -69,13 +69,13 @@ final class DataizedTest {
     @Test
     void refusesAByteThatIsNeitherTrueNorFalse() {
         MatcherAssert.assertThat(
-            "a one byte datum that is not 00- or 01- must be refused, not read as false",
+            "a one byte datum that is not 00- or FF- must be refused, not read as false",
             Assertions.assertThrows(
                 ExFailure.class,
-                () -> new Dataized(new PhDefault(new byte[] {(byte) 0xFF})).asBool(),
-                "dataizing FF- as boolean was expected to fail with ExFailure"
+                () -> new Dataized(new PhDefault(new byte[] {(byte) 0x01})).asBool(),
+                "dataizing 01- as boolean was expected to fail with ExFailure"
             ).getMessage(),
-            Matchers.containsString("only 00- and 01- are booleans")
+            Matchers.containsString("only 00- and FF- are booleans")
         );
     }
 
@@ -93,35 +93,35 @@ final class DataizedTest {
     }
 
     @Test
-    void refusesAMalformedByteSequence() {
+    void refusesBytesThatAreNotValidText() {
         MatcherAssert.assertThat(
-            "a malformed byte must be refused, not replaced by U+FFFD",
+            "bytes that are not UTF-8 must be refused, not replaced with U+FFFD",
             Assertions.assertThrows(
                 ExFailure.class,
-                () -> new Dataized(new PhDefault(new byte[] {(byte) 0xFF})).asString(),
-                "dataizing FF- as string was expected to fail with ExFailure"
+                () -> new Dataized(new Data.ToPhi(new byte[]{(byte) 0xFF})).asString(),
+                "a lone FF byte was expected to fail with ExFailure"
             ).getMessage(),
-            Matchers.containsString("is not valid UTF-8 text")
+            Matchers.containsString("not valid UTF-8")
         );
     }
 
     @Test
     void refusesHalfOfAMultiByteCharacter() {
         MatcherAssert.assertThat(
-            "half of a multi-byte character must be refused, not replaced by U+FFFD",
+            "a sequence that merely stops early must be refused too, not padded with U+FFFD",
             Assertions.assertThrows(
                 ExFailure.class,
-                () -> new Dataized(new PhDefault(new byte[] {(byte) 0xD0})).asString(),
-                "dataizing D0- as string was expected to fail with ExFailure"
+                () -> new Dataized(new Data.ToPhi(new byte[]{(byte) 0xD0})).asString(),
+                "the first half of a two-byte character was expected to fail with ExFailure"
             ).getMessage(),
-            Matchers.containsString("is not valid UTF-8 text")
+            Matchers.containsString("not valid UTF-8")
         );
     }
 
     @Test
     void readsAMultiByteCharacter() {
         MatcherAssert.assertThat(
-            "a valid multi-byte character must be read as it is",
+            "a whole multi-byte character must still be read as it is",
             new Dataized(new Data.ToPhi("привет")).asString(),
             Matchers.equalTo("привет")
         );

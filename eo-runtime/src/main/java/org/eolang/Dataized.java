@@ -94,12 +94,6 @@ public final class Dataized {
 
     /**
      * Extract the data from the object and convert to string.
-     *
-     * <p>The bytes must spell valid UTF-8. A malformed sequence fails here
-     * instead of turning into U+FFFD, so that a Java-backed operation reads
-     * the same text {@code string.length} and {@code string.slice} read, and
-     * never an unrelated one the program never supplied.</p>
-     *
      * @return Data as string
      */
     public String asString() {
@@ -113,8 +107,8 @@ public final class Dataized {
         } catch (final CharacterCodingException ex) {
             throw new ExFailure(
                 String.format(
-                    "The datum %s is not valid UTF-8 text",
-                    Arrays.toString(bytes)
+                    "Can't dataize the bytes %s to string, they are not valid UTF-8",
+                    new VerboseBytesAsString(bytes).get()
                 ),
                 ex
             );
@@ -141,13 +135,13 @@ public final class Dataized {
                 weak.length, Arrays.toString(weak)
             );
         }
-        if (weak[0] != 0 && weak[0] != 1) {
+        if (weak[0] != 0 && weak[0] != -1) {
             throw new ExFailure(
-                "Can't dataize the byte %s to boolean, only 00- and 01- are booleans",
+                "Can't dataize the byte %s to boolean, only 00- and FF- are booleans",
                 Arrays.toString(weak)
             );
         }
-        return weak[0] == 1;
+        return weak[0] == -1;
     }
 
     /**
