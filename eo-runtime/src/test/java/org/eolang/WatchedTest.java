@@ -64,13 +64,13 @@ final class WatchedTest {
     }
 
     @Test
-    void failsWhenBodyRefusesToStop() {
+    void saysWhenBodyRefusesToStop() {
         final AtomicBoolean release = new AtomicBoolean(false);
         try {
             MatcherAssert.assertThat(
                 "A body ignoring the interrupt must be named as holding the heap, but it wasnt",
                 Assertions.assertThrows(
-                    IllegalStateException.class,
+                    TestAbortedException.class,
                     () -> new Watched(1024L * 1024L, 100L).through(
                         () -> {
                             final byte[][] junk = new byte[1][];
@@ -81,7 +81,7 @@ final class WatchedTest {
                             return null;
                         }
                     ),
-                    "A body that would not stop must fail the test, but it didnt"
+                    "A body that would not stop must still be skipped, but it wasnt"
                 ).getMessage(),
                 Matchers.containsString("would not stop")
             );
