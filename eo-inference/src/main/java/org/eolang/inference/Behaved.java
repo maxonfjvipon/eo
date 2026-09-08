@@ -95,7 +95,7 @@ final class Behaved {
         final Map<String, Collection<Map<String, String>>> rows =
             new Ungrouped(this.table, Collections.emptyMap()).rows();
         final Provided owned = new Provided(
-            this.table, this.names, this.table.xpath("//attr[@void='true']/@type")
+            this.table, this.names, new Hollows(this.table).all()
         );
         final Map<String, String> found = new LinkedHashMap<>(0);
         for (final String type : rows.keySet()) {

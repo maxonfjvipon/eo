@@ -72,7 +72,7 @@ final class Handed {
             new Provided(
                 provides,
                 new Ends(new Pairs(links).all()).names(),
-                provides.xpath("//attr[@void='true']/@type")
+                new Hollows(provides).all()
             )
         );
     }
