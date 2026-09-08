@@ -31,7 +31,11 @@
     test to its end. The value here sits above the band an ordinary test
     occupies — a directory walk passes about 300M through the allocator
     without ever holding much — so that the guard fires on a runaway test
-    rather than on the population (#8341).
+    rather than on the population (#8341). It binds one test at a time,
+    though, while tests run as wide as the box has cores, so a job that
+    raises it from the command line has to keep the sum under the heap:
+    the value times the workers JUnit is given must stay under -Xmx, or
+    every test stays inside its own budget and the heap dies anyway.
     -->
     <eo.maxmem>1G</eo.maxmem>
   </properties>
