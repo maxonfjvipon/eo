@@ -6,6 +6,7 @@ package org.eolang.lowering;
 
 import com.github.lombrozo.xnav.Filter;
 import com.github.lombrozo.xnav.Xnav;
+import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -53,7 +54,9 @@ import org.w3c.dom.Element;
  * never reads is what makes its own dataization reenter itself (#8439).
  * Whatever refuses along the way — an unwitnessed void, an operation
  * outside the tables, a body that needs no computation — leaves the
- * formation as written.</p>
+ * formation as written and says at debug level why: a refusal is normal
+ * and must not fail the build, but a build that cannot tell one refusal
+ * from another cannot be reasoned about either.</p>
  *
  * @since 0.76.0
  */
@@ -106,16 +109,29 @@ public final class Lowered implements Rewrite {
         final List<Xnav> kids = Lowered.kids(node);
         final long rhos = kids.stream().filter(Lowered::rho).count();
         final long hidden = kids.stream().filter(Lowered::hidden).count();
+        final int shape = inputs.size() + 1 + (int) rhos + (int) hidden;
         boolean done = false;
-        if (!inputs.isEmpty() && bodies.size() == 1
-            && kids.size() == inputs.size() + 1 + (int) rhos + (int) hidden) {
-            done = this.spliced(node, bodies.get(0), inputs);
+        if (!inputs.isEmpty()) {
+            if (bodies.size() == 1 && kids.size() == shape) {
+                done = this.spliced(node, bodies.get(0), inputs, place);
+            } else {
+                Logger.debug(
+                    this,
+                    String.join(
+                        "",
+                        "The formation at %s is not shaped to lower: ",
+                        "%d body(-ies) and %d attribute(s), ",
+                        "where one body and %d attribute(s) are expected"
+                    ),
+                    place, bodies.size(), kids.size(), shape
+                );
+            }
         }
         return done;
     }
 
     private boolean spliced(final Xnav node, final Xnav body,
-        final Map<String, String> inputs) throws IOException {
+        final Map<String, String> inputs, final String place) throws IOException {
         String text = "";
         String carrier = "";
         try {
@@ -131,6 +147,10 @@ public final class Lowered implements Rewrite {
             }
         } catch (final IllegalStateException | IOException ex) {
             carrier = "";
+            Logger.debug(
+                this, "The formation at %s refused to lower: %s",
+                place, ex.getMessage()
+            );
         }
         final boolean done = !carrier.isEmpty();
         if (done) {
@@ -179,6 +199,15 @@ public final class Lowered implements Rewrite {
             }
             final String forma = this.formas.given(String.format("%s.%s", place, name));
             if (forma.isEmpty()) {
+                Logger.debug(
+                    this,
+                    String.join(
+                        "",
+                        "The void '%s' of the formation at %s is witnessed ",
+                        "by no single data forma, so nothing can carry it"
+                    ),
+                    name, place
+                );
                 out.clear();
                 break;
             }
