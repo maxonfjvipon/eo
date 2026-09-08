@@ -54,14 +54,19 @@ import java.util.Map;
 final class Fillings {
 
     /**
-     * The links table.
+     * What the links table says.
      */
-    private final XML table;
+    private final Said table;
 
     /**
      * The provides table.
      */
     private final XML given;
+
+    /**
+     * The locator of every void.
+     */
+    private final Collection<String> hollows;
 
     /**
      * Ctor.
@@ -70,8 +75,20 @@ final class Fillings {
      * @param provides The provides table, which says where a filling can land
      */
     Fillings(final XML links, final XML provides) {
+        this(new Said(new Pairs(links)), provides, new Hollows(provides).all());
+    }
+
+    /**
+     * Ctor.
+     *
+     * @param links What the links table says, as {@link Resolved} left it
+     * @param provides The provides table, which says where a filling can land
+     * @param voids The locator of every void, from {@link Hollows}
+     */
+    Fillings(final Said links, final XML provides, final Collection<String> voids) {
         this.table = links;
         this.given = provides;
+        this.hollows = voids;
     }
 
     /**
@@ -81,13 +98,12 @@ final class Fillings {
      *  nobody ever fills
      */
     Map<String, Collection<Type>> all() {
-        final Pairs pairs = new Pairs(this.table);
-        final Map<String, String> names = new Ends(pairs.all()).names();
-        final Map<String, String> landings = new Landed(pairs, this.given).all();
-        final Forms forms = new Forms(pairs.forms());
+        final Map<String, String> names = new Ends(this.table.all()).names();
+        final Map<String, String> landings = new Landed(this.table, this.given).all();
+        final Forms forms = new Forms(this.table.forms());
         final Map<String, Map<String, Type>> placed = new LinkedHashMap<>(0);
         final Map<String, Map<String, Type>> handed = new LinkedHashMap<>(0);
-        for (final Map.Entry<String, Collection<String>> bound : pairs.puts().entrySet()) {
+        for (final Map.Entry<String, Collection<String>> bound : this.table.puts().entrySet()) {
             for (final String put : bound.getValue()) {
                 final String end = landings.get(put);
                 if (end == null) {
@@ -100,7 +116,9 @@ final class Fillings {
                 }
             }
         }
-        final Handed atoms = new Handed(this.table, this.given);
+        final Handed atoms = new Handed(
+            this.given, new Provided(this.given, names, this.hollows)
+        );
         Map<String, Map<String, Type>> walked = new Carried(placed, handed).all();
         while (atoms.fills(placed, walked)) {
             walked = new Carried(placed, handed).all();

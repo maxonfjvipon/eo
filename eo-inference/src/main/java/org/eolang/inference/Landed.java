@@ -39,7 +39,7 @@ final class Landed {
     /**
      * What the links table says.
      */
-    private final Pairs links;
+    private final Said links;
 
     /**
      * The provides table.
@@ -53,7 +53,7 @@ final class Landed {
      * @param provides The provides table, which says what an atom comes back
      *  with and which objects are formations
      */
-    Landed(final Pairs table, final XML provides) {
+    Landed(final Said table, final XML provides) {
         this.links = table;
         this.given = provides;
     }
