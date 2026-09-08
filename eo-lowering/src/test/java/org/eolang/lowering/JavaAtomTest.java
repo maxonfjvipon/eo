@@ -84,7 +84,7 @@ final class JavaAtomTest {
                             new Protocol(
                                 Arrays.asList(
                                     new Application(
-                                        "s1", "L_number_eq",
+                                        "s1", "L_number_equal",
                                         Arrays.asList("sym:v1", "number:00-00-00-00-00-00-00-00")
                                     ),
                                     new Fork(
@@ -307,7 +307,7 @@ final class JavaAtomTest {
                 new Protocol(
                     Arrays.asList(
                         new Application("s1", "L_number_div", Arrays.asList("sym:v0", "sym:v1")),
-                        new Application("s2", "L_number_eq", Arrays.asList("sym:s1", "sym:v0"))
+                        new Application("s2", "L_number_equal", Arrays.asList("sym:s1", "sym:v0"))
                     ),
                     "sym:s2",
                     "bool"
@@ -927,7 +927,7 @@ final class JavaAtomTest {
         return new Protocol(
             Arrays.asList(
                 new Application(
-                    "s1", "L_number_eq", Arrays.asList("sym:v0", "number:00-00-00-00-00-00-00-00")
+                    "s1", "L_number_equal", Arrays.asList("sym:v0", "number:00-00-00-00-00-00-00-00")
                 ),
                 new Fork(
                     "s2", "L_bool_if", "sym:s1",
