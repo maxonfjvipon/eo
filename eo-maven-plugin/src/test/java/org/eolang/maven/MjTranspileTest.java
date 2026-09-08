@@ -14,8 +14,6 @@ import com.yegor256.xsline.TrClasspath;
 import com.yegor256.xsline.TrDefault;
 import com.yegor256.xsline.Xsline;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -451,11 +449,9 @@ final class MjTranspileTest {
                 .execute(new PpTranspile()),
             "a phiDefaultClass that is not a Java class name must not reach the generated Java"
         );
-        final StringWriter writer = new StringWriter();
-        exception.printStackTrace(new PrintWriter(writer));
         MatcherAssert.assertThat(
             "a phiDefaultClass that is not a Java class name must be refused by naming the option, instead of emitting an extends clause that cannot compile",
-            writer.toString(),
+            new UncheckedText(new TextOf(exception)).asString(),
             Matchers.containsString("eo.phiDefaultClass")
         );
     }
@@ -469,11 +465,9 @@ final class MjTranspileTest {
                 .execute(new PpTranspile()),
             "TranspileMojo should throw an exception on invalid EO code"
         );
-        final StringWriter writer = new StringWriter();
-        exception.printStackTrace(new PrintWriter(writer));
         MatcherAssert.assertThat(
             "TranspileMojo should throw an exception with detailed message on invalid EO code",
-            writer.toString(),
+            new UncheckedText(new TextOf(exception)).asString(),
             Matchers.allOf(
                 Matchers.containsString("Expected 1 child nodes, but found 0"),
                 Matchers.containsString("main.xmir' encountered some problems, broken syntax?")
