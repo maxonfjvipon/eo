@@ -22,6 +22,7 @@ import org.eolang.inference.Clues;
 import org.eolang.inference.Demanded;
 import org.eolang.inference.Depth;
 import org.eolang.inference.Ladder;
+import org.eolang.inference.Reduced;
 import org.eolang.inference.Resolved;
 import org.eolang.inference.Witnessed;
 import org.eolang.parser.TrFull;
@@ -103,7 +104,7 @@ final class Inferring implements Step {
             }
             final int ready = this.ready();
             final long start = System.currentTimeMillis();
-            new Witnessed(new Demanded(new Resolved(new Clues())))
+            new Witnessed(new Demanded(new Reduced(new Resolved(new Clues()))))
                 .follow(this.prepared, this.tables);
             this.declared();
             Logger.info(
