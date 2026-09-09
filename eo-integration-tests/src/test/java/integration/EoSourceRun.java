@@ -62,7 +62,7 @@ final class EoSourceRun implements Proc<Object> {
      * {@code .mvn/jvm.config} and the same flags on the forked command.
      */
     private static final String[] FLAGS = {
-        "-Xmx1g",
+        "-Xmx4g",
         "-Xss64m",
         "-XX:-HeapDumpOnOutOfMemoryError",
     };
