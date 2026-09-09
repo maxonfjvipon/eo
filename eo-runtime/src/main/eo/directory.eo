@@ -723,17 +723,14 @@
         directory mktemp.tmpfile.deleted
 
   ++> can-walk-with-a-star-inside-a-glob-character-class
-    seq * > @
-      touched.
-        as-file.
+    os.is-windows.or > @
+      seq *
+        touched. (d.resolved "*.txt").as-file
+        touched. (d.resolved "a.txt").as-file
+        eq.
+          ",".joined
+            d.as-dir.walk "[*].txt"
           d.resolved "*.txt"
-      touched.
-        as-file.
-          d.resolved "a.txt"
-      eq.
-        ",".joined
-          d.as-dir.walk "[*].txt"
-        d.resolved "*.txt"
     as-path. > d
       made.
         directory mktemp.tmpfile.deleted
