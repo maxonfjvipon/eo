@@ -37,7 +37,7 @@ final class Calls {
     /**
      * What the links table says.
      */
-    private final Pairs links;
+    private final Said links;
 
     /**
      * The provides table.
@@ -52,7 +52,7 @@ final class Calls {
      * @param provides The provides table, which says where an argument can
      *  land
      */
-    Calls(final Collection<XML> applications, final Pairs table, final XML provides) {
+    Calls(final Collection<XML> applications, final Said table, final XML provides) {
         this.sites = applications;
         this.links = table;
         this.given = provides;

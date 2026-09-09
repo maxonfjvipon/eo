@@ -86,21 +86,35 @@ final class Woven {
      *  order the pairs came in
      */
     Map<String, Type> rows(final Map<String, String> pairs) {
+        return new Refs(pairs, this.binds(pairs)).all();
+    }
+
+    /**
+     * What every one of these pairs put into the voids of what it copies.
+     *
+     * <p>This is the half of a row that {@link Bound} works out, and a rule
+     * that reads it does not need the row: {@link Promoted} asks what the
+     * program puts into every void, which is this read the other way round,
+     * and rendering it into a document first only to read it back out again is
+     * a second of every pass of a fixpoint that runs a hundred of them.</p>
+     *
+     * @param pairs The pairs, each object against the one it is a copy of
+     * @return The objects put in, by the locator of the void, by the locator of
+     *  the object that put them there
+     */
+    Map<String, Map<String, String>> binds(final Map<String, String> pairs) {
         final Map<String, String> names = new Ends(pairs).names();
         final Provided owned = new Provided(this.given, names, this.hollows);
-        return new Refs(
-            pairs,
-            new Copied(
-                new Bound(
-                    this.applied.arguments(),
-                    this.applied.named(),
-                    this.receivers,
-                    pairs,
-                    owned
-                ).all(),
+        return new Copied(
+            new Bound(
+                this.applied.arguments(),
+                this.applied.named(),
+                this.receivers,
                 pairs,
-                new Lent(owned, this.all, this.applied.arguments(), this.hollows).sites(names)
-            ).all()
+                owned
+            ).all(),
+            pairs,
+            new Lent(owned, this.all, this.applied.arguments(), this.hollows).sites(names)
         ).all();
     }
 }
