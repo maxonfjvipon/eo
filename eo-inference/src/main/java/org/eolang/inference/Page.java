@@ -24,10 +24,18 @@ import org.xembly.Directives;
  * and this puts the two together: the source, line by line, with a mark on
  * every stretch of text we can say something about.</p>
  *
+ * <p>The bytes of a literal get no mark of their own. There is nothing to find
+ * out about {@code 42} beyond that it is what it is, so the only thing a mark
+ * over it could say is where the parser filed those bytes away, and a reader
+ * hovering over a number was told {@code Φ.cup.lid.α0} where the object above
+ * it had already said something worth reading (#8538).</p>
+ *
  * <p>The tally at the top is counted here too, from the same answers as the
  * marks. A page that says nine tenths green and then draws half the file red
- * would be worse than no page, and counting in one place is what stops
- * that.</p>
+ * would be worse than no page, and counting in one place is what stops that.
+ * The bytes stay counted: they are known as deeply as anything ever is, and
+ * dropping them from the tally would leave the page claiming less than it
+ * knows.</p>
  *
  * @since 0.70.0
  */
@@ -105,7 +113,9 @@ final class Page {
 
     private Map<Integer, Collection<Written>> written() {
         final Map<Integer, Collection<Written>> found = new LinkedHashMap<>(0);
-        for (final XML object : this.xmir.nodes("//o[@loc and @line and @pos]")) {
+        for (final XML object : this.xmir.nodes(
+            "//o[@loc and @line and @pos][@base or not(text()[normalize-space()])]"
+        )) {
             final Noted noted = new Noted(object);
             final String loc = noted.says("loc");
             final Answer answer = this.answers.get(loc);
