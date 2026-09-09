@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: MIT
 ---
 # A name is taken from an object even when the object goes unwritten, because
-# it is the one the line is written in: `choose > taken` inside `[choose] > pick`
-# reads the same void that `p.choose` reads from outside. Both are applied to
-# two arms, both are answered by what the callers put into the void, and there
-# is no reason for the two to end differently. A reader further along already
-# got its answer this way, so the read itself staying a question left the table
-# saying two things about one object.
+# it is the one the line is written in: `choose > taken` inside
+# `[choose] > pick` reads the same void that `p.choose` reads from outside.
+# Both are applied to two arms, both are answered by what the callers put into
+# the void, and there is no reason for the two to end differently. A reader
+# further along already got its answer this way, so the read itself staying a
+# question left the table saying two things about one object.
 eo:
   pick.eo: |
     [choose] > pick
